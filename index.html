@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Dynamic Overs & Center Events</title>
+<title>Live Cricket Broadcast Overlay - Big Center Runs Display</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -16,7 +16,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 
 .overlay{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:98%;max-width:1120px;z-index:100;filter:drop-shadow(0 6px 14px rgba(0,0,0,.85))}
 .top-bar{height:4px;background:linear-gradient(90deg,#b30000,#ff1e1e,#b30000);border-radius:6px 6px 0 0}
-.main{display:flex;height:80px;background:#0d1117;border-left:3px solid #d40000;border-right:3px solid #d40000}
+.main{display:flex;height:82px;background:#0d1117;border-left:3px solid #d40000;border-right:3px solid #d40000}
 
 .wing-l{flex:1;display:flex;align-items:center;justify-content:space-between;padding:4px 10px 4px 14px;background:linear-gradient(135deg,#d4a000,#090d16 145%);border-radius:0 38px 38px 0;z-index:2;box-shadow:4px 0 10px rgba(0,0,0,.6);min-width:0}
 .wing-r{flex:1;display:flex;align-items:center;justify-content:space-between;padding:4px 14px 4px 10px;background:linear-gradient(135deg,#046a38,#090d16 145%);border-radius:38px 0 0 38px;z-index:2;box-shadow:-4px 0 10px rgba(0,0,0,.6);min-width:0}
@@ -33,19 +33,22 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .flag{width:50px;height:50px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0}
 .flag img{width:100%;height:100%;object-fit:cover}
 
-/* Center Event Box (0, 1, 2, 3, 4, 6, W) */
-.center-box{width:108px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
-.ball{color:#fff;font-size:32px;font-weight:900;line-height:1;transition:transform .2s ease}
-.ball.c0{color:#9ca3af}
-.ball.c4{color:#38bdf8;text-shadow:0 0 14px rgba(56,189,248,.85);font-size:35px}
-.ball.c6{color:#facc15;text-shadow:0 0 16px rgba(250,204,21,.9);font-size:36px}
-.ball.cW{color:#ef4444;text-shadow:0 0 16px rgba(239,68,68,.9);font-size:35px}
-.event-sub{font-size:9px;font-weight:900;color:#fff;letter-spacing:.6px;margin-top:3px;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.1)}
+/* Big Center Runs / Wicket Display */
+.center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
+.ball{color:#ffffff;font-size:44px;font-weight:900;line-height:0.95;text-shadow:0 3px 12px rgba(255,255,255,.4)}
+.ball.c0{color:#e5e7eb}
+.ball.c1,.ball.c2,.ball.c3{color:#4ade80;text-shadow:0 0 12px rgba(74,222,128,.6)}
+.ball.c4{color:#38bdf8;text-shadow:0 0 16px rgba(56,189,248,.95);font-size:46px}
+.ball.c6{color:#facc15;text-shadow:0 0 18px rgba(250,204,21,.95);font-size:48px}
+.ball.cW{color:#ef4444;text-shadow:0 0 18px rgba(239,68,68,.95);font-size:46px}
+
+.event-sub{font-size:9px;font-weight:900;color:#fff;letter-spacing:.6px;margin-top:3px;text-transform:uppercase;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,.15)}
 .event-sub.c4{background:#0284c7;color:#fff}
-.event-sub.c6{background:#ca8a04;color:#000}
+.event-sub.c6{background:#eab308;color:#000}
 .event-sub.cW{background:#dc2626;color:#fff}
+
 .ball-pop{animation:popAnim .35s ease}
-@keyframes popAnim{0%{transform:scale(.5)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes popAnim{0%{transform:scale(.4)}65%{transform:scale(1.22)}100%{transform:scale(1)}}
 
 .dot-l,.dot-r{position:absolute;top:5px;width:7px;height:7px;border-radius:50%;background:#ef4444}
 .dot-l{left:7px}.dot-r{right:7px}
@@ -80,8 +83,8 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 .url-out{background:#0f172a;border:1px dashed #38bdf8;padding:8px;border-radius:8px;font-size:11px;color:#e2e8f0;word-break:break-all;margin-top:6px;user-select:text}
 
 @media(max-width:600px){
-  .main{height:70px}.score{font-size:19px}.overs-badge{font-size:9px;padding:1px 5px}.bowl-lbl{font-size:15px}
-  .flag{width:38px;height:38px;font-size:11px}.center-box{width:76px}.ball{font-size:22px}.pill{font-size:9px;padding:1px 7px}
+  .main{height:72px}.score{font-size:19px}.overs-badge{font-size:9px;padding:1px 5px}.bowl-lbl{font-size:15px}
+  .flag{width:38px;height:38px;font-size:11px}.center-box{width:82px}.ball{font-size:34px}.ball.c4,.ball.c6,.ball.cW{font-size:36px}.pill{font-size:9px;padding:1px 7px}
 }
 </style>
 </head>
@@ -89,24 +92,24 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Overs + / - & Center Highlights)</h3>
+    <h3>🎛️ Live Cricket Controller (Big Center Runs + Overs)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
   <!-- 1. Select Match & Total Match Overs -->
   <div class="grp">
-    <label>1. Select Match / Format Total Overs (Auto-Minus on Bowling Side)</label>
+    <label>1. Select Match / Format Total Overs</label>
     <div class="row">
       <select id="matchSel" style="flex:2"></select>
-      <select id="totalOvSel" style="flex:1" onchange="changeTotalOvers(this.value)" title="Total Match Overs">
-        <option value="20" selected>20 Overs (T20)</option>
-        <option value="50">50 Overs (ODI)</option>
-        <option value="10">10 Overs (T10)</option>
+      <select id="totalOvSel" style="flex:1" onchange="changeTotalOvers(this.value)">
+        <option value="20" selected>20 Overs</option>
+        <option value="50">50 Overs</option>
+        <option value="10">10 Overs</option>
         <option value="5">5 Overs</option>
       </select>
-      <button class="btn btn-d" onclick="swapTeams()" title="Swap 2nd Innings">⇄ Swap</button>
+      <button class="btn btn-d" onclick="swapTeams()">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Auto-Sync ON: Left Overs (+), Right Remaining Overs (-)</div>
+    <div class="note" id="espnNote">Auto-Sync ON: Big Runs in Center, Left Over (+), Right Over (-)</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
@@ -120,9 +123,9 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
   </div>
 
-  <!-- 3. Ball Control Pad (Triggers Center Highlight + Left Over (+) & Right Over (-)) -->
+  <!-- 3. Ball Control Pad (Shows Big Number in Center Box!) -->
   <div class="grp">
-    <label>3. Tap Ball Result (Updates Center Display, Left Over + & Right Over -)</label>
+    <label>3. Tap Ball Result (Shows Big Runs 0, 1, 2, 3, 4, 6, W in Center!)</label>
     <div class="pad">
       <button onclick="addBall('0')">0</button>
       <button onclick="addBall('1')">1</button>
@@ -142,11 +145,11 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 4. Manual Score & Opponent 1st Innings -->
   <div class="grp">
-    <label>4. Manual Edit: Runs | Wkts | Overs | Opponent 1st Inn Score</label>
+    <label>4. Manual Edit: Runs | Wkts | Overs | Opponent Score</label>
     <div class="row">
       <input type="number" id="inpRuns" placeholder="Runs" oninput="manualBatEdit()">
       <input type="number" id="inpWkts" placeholder="Wkts" max="10" min="0" oninput="manualBatEdit()">
-      <input type="text" id="inpOvers" placeholder="Ov (e.g. 4.2)" oninput="manualBatEdit()">
+      <input type="text" id="inpOvers" placeholder="Ov (4.2)" oninput="manualBatEdit()">
       <input type="text" id="inpOppScore" placeholder="Opp (185-7)" oninput="manualOppEdit()">
     </div>
   </div>
@@ -212,11 +215,11 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/lk.png"></div>
     </div>
 
-    <!-- Center Box: Highlights 0 (DOT), 1, 2, 3, 4 (FOUR), 6 (SIX), W (WICKET) -->
+    <!-- Center Box: Big Runs Number (0, 1, 2, 3, 4, 6, W) -->
     <div class="center-box" onclick="openPanel()">
       <div class="dot-l" id="dotSync" title="Green = Live Sync"></div>
       <div class="dot-r" id="dotAI" title="Blue = AI Voice"></div>
-      <div class="ball" id="lastBall">2</div>
+      <div class="ball c2" id="lastBall">2</div>
       <div class="event-sub" id="eventSubTag">2 RUNS</div>
     </div>
 
@@ -255,7 +258,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[1],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v9_removers';
+const TOPIC='cricket/live/kinggopan_v10_centerruns';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -328,8 +331,15 @@ function manualBatEdit(){
   let r=parseInt(document.getElementById('inpRuns').value);
   let w=parseInt(document.getElementById('inpWkts').value);
   let ov=document.getElementById('inpOvers').value.trim();
-  if(!isNaN(r))st.r=Math.max(0,r);
-  if(!isNaN(w))st.w=Math.min(10,Math.max(0,w));
+  if(!isNaN(r)){
+    let diff=r-st.r;
+    if(diff>0&&diff<=6)st.lb=String(diff);
+    st.r=Math.max(0,r);
+  }
+  if(!isNaN(w)){
+    if(w>st.w)st.lb='W';
+    st.w=Math.min(10,Math.max(0,w));
+  }
   if(ov!=='')st.b=oversToBalls(ov);
   st.manualLock=true;st.ts=Date.now();
   render();sync();
@@ -412,10 +422,18 @@ async function fetchESPN(isAuto=true){
       let totOv=fmtName.includes('ODI')?50:fmtName.includes('T10')?10:20;
       let oppSc=bowl.hasBatted?`${bowl.runs}-${bowl.wkts}`:'';
 
+      // Calculate exact runs/wicket scored on the latest delivery!
+      let detectedBall=st.lb||'0';
+      if(st.id==='espn-'+ev.id&&st.bN===bat.name){
+        if(bat.wickts>st.w)detectedBall='W';
+        else if(bat.runs>st.r)detectedBall=String(bat.runs-st.r);
+        else if(balls1>st.b&&bat.runs===st.r)detectedBall='0';
+      }
+
       list.push({
         id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag}]`,isLive:(tag==='LIVE'),
         bN:bat.name,bC:bat.abbr,c1:'#1d4ed8',r:bat.runs,w:bat.wkts,b:balls1,totOv:totOv,
-        lb:tag==='LIVE'?'•':'0',fN:bowl.name,fC:bowl.abbr,c2:'#047857',oppSc:oppSc,
+        lb:detectedBall,fN:bowl.name,fC:bowl.abbr,c2:'#047857',oppSc:oppSc,
         t:(ev.status?.type?.shortDetail||tag).toUpperCase()
       });
     }
@@ -435,17 +453,18 @@ async function fetchESPN(isAuto=true){
 }
 
 function getEventLabel(val){
-  switch(String(val)){
+  const clean=String(val||'0').toUpperCase();
+  switch(clean){
     case '0': return {txt:'0',sub:'DOT BALL',cls:'c0'};
-    case '1': return {txt:'1',sub:'1 RUN',cls:''};
-    case '2': return {txt:'2',sub:'2 RUNS',cls:''};
-    case '3': return {txt:'3',sub:'3 RUNS',cls:''};
+    case '1': return {txt:'1',sub:'1 RUN',cls:'c1'};
+    case '2': return {txt:'2',sub:'2 RUNS',cls:'c2'};
+    case '3': return {txt:'3',sub:'3 RUNS',cls:'c3'};
     case '4': return {txt:'4',sub:'FOUR!',cls:'c4'};
     case '6': return {txt:'6',sub:'SIXER!',cls:'c6'};
     case 'W': return {txt:'W',sub:'WICKET!',cls:'cW'};
     case 'WD': return {txt:'WD',sub:'WIDE +1',cls:'c4'};
     case 'NB': return {txt:'NB',sub:'NO BALL +1',cls:'c4'};
-    default: return {txt:String(val),sub:`BALL ${st.b%6}/6`,cls:''};
+    default: return {txt:clean,sub:'RUNS',cls:'c1'};
   }
 }
 
@@ -483,12 +502,14 @@ function render(){
   let totOv=parseInt(st.totOv)||20;
   document.getElementById('batOv').textContent=`OVERS: ${ovPlayed} / ${totOv}`;
 
-  // 2. Center Box: Highlights 0 (DOT), 1, 2, 3, 4 (FOUR), 6 (SIX), W (WICKET)
+  // 2. Center Box: Always displays BIG RUNS NUMBER (0, 1, 2, 3, 4, 6, W)
   let evInfo=getEventLabel(st.lb);
   let lbEl=document.getElementById('lastBall');
   let subEl=document.getElementById('eventSubTag');
   lbEl.textContent=evInfo.txt;
-  lbEl.className='ball '+(evInfo.cls||'')+' ball-pop';
+  lbEl.className='ball '+(evInfo.cls||'');
+  void lbEl.offsetWidth; // Trigger pop animation on every ball!
+  lbEl.classList.add('ball-pop');
   subEl.textContent=evInfo.sub;
   subEl.className='event-sub '+(evInfo.cls||'');
 
@@ -535,7 +556,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v9',JSON.stringify(st));
+  localStorage.setItem('ck_st_v10',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -543,7 +564,7 @@ function sync(){
 
 function addBall(v){
   hist.push({...st});
-  st.lb=v;
+  st.lb=String(v);
   st.manualLock=true;
   if(v==='W'){if(st.w<10)st.w++;st.b++;}
   else{st.r+=parseInt(v);st.b++;}
@@ -559,7 +580,7 @@ function addBall(v){
   render();sync();
 }
 
-function addExtra(v){hist.push({...st});st.r++;st.lb=v;st.manualLock=true;render();sync();}
+function addExtra(v){hist.push({...st});st.r++;st.lb=String(v);st.manualLock=true;render();sync();}
 function undoBall(){if(hist.length){st=hist.pop();render();sync();}}
 function setBg(b){st.bg=b;render();sync();}
 
@@ -609,8 +630,8 @@ function nextDemo(){
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Overs plus, remaining overs minus, and center ball highlights are ready!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Overs plus, remaining overs minus, and center ball highlights are ready!'}));
+  speak('Gopakumar','Big center runs display and overs counter are working!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Big center runs display and overs counter are working!'}));
 }
 
 // YouTube Chat
@@ -637,7 +658,7 @@ async function connectYT(){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v9'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v10'));if(s)st={...st,...s};}catch(e){}
 
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=st.bN.slice(0,3);st.manualLock=true;}
 if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=st.fN.slice(0,3);st.manualLock=true;}
