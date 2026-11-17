@@ -155,7 +155,7 @@
 
     .ball-value {
       color: #ffffff;
-      font-size: 38px;
+      font-size: 34px;
       font-weight: 900;
       line-height: 1;
       text-shadow: 0 2px 10px rgba(255, 255, 255, 0.35);
@@ -165,7 +165,6 @@
     .ball-value.is-six { color: #facc15; }
     .ball-value.is-wicket { color: #ef4444; }
 
-    /* Live Pulse Indicator */
     .live-pulse-dot {
       position: absolute;
       top: 5px;
@@ -461,7 +460,7 @@
       .bowling-label { font-size: 18px; }
       .flag-circle { width: 44px; height: 44px; font-size: 16px; }
       .center-ball-box { width: 76px; }
-      .ball-value { font-size: 28px; }
+      .ball-value { font-size: 26px; }
       .team-pill { font-size: 9px; padding: 1px 8px; }
       .toss-status, .crr-box { font-size: 11px; }
     }
@@ -488,7 +487,7 @@
       </div>
 
       <div class="center-ball-box" id="centerSettingsBtn" title="Tap for Settings">
-        <div class="live-pulse-dot" title="Auto-Refresh Active (Every 15s)"></div>
+        <div class="live-pulse-dot" id="liveDot" title="Auto-Refresh Active (Every 10s)"></div>
         <div class="settings-hint-dot" id="aiDot"></div>
         <div class="ball-value" id="lastBallText">2</div>
       </div>
@@ -514,7 +513,7 @@
   <div class="modal-backdrop" id="settingsModal">
     <div class="settings-card">
       <div class="modal-header">
-        <h3>⚙️ Live Cricket & AI Settings (Auto-Refresh: 15s)</h3>
+        <h3>⚙️ Live Cricket & AI Settings (10s Live Sync)</h3>
         <button class="close-btn" id="closeModalBtn">✕ Close</button>
       </div>
 
@@ -524,7 +523,7 @@
           <select id="matchSelectBox"></select>
           <button class="btn btn-amber" id="refreshEspnBtn" title="Refresh ESPN Live Feed">🔄</button>
         </div>
-        <div class="status-note" id="espnStatusText">Auto-Refresh ON: Checking ESPN every 15 seconds...</div>
+        <div class="status-note" id="espnStatusText">Connecting to ESPN Live Feed...</div>
       </div>
 
       <div class="form-group">
@@ -557,7 +556,7 @@
       </div>
 
       <div class="form-group">
-        <label>Quick Ball Update</label>
+        <label>Quick Ball Update (Manual Score Control)</label>
         <div class="ball-pad">
           <button onclick="recordBall('0')">0</button>
           <button onclick="recordBall('1')">1</button>
@@ -581,11 +580,36 @@
   </div>
 
   <script>
+    const TEAM_STYLES = {
+      'IND': { code: 'IN', bg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)' },
+      'INDIA': { code: 'IN', bg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)' },
+      'AUS': { code: 'AU', bg: 'linear-gradient(135deg, #eab308 0%, #a16207 100%)' },
+      'AUSTRALIA': { code: 'AU', bg: 'linear-gradient(135deg, #eab308 0%, #a16207 100%)' },
+      'PAK': { code: 'PK', bg: 'linear-gradient(135deg, #046a38 0%, #024222 100%)' },
+      'PAKISTAN': { code: 'PK', bg: 'linear-gradient(135deg, #046a38 0%, #024222 100%)' },
+      'SL': { code: 'LK', bg: 'linear-gradient(135deg, #d4a000 0%, #9e7400 100%)' },
+      'SRI LANKA': { code: 'LK', bg: 'linear-gradient(135deg, #d4a000 0%, #9e7400 100%)' },
+      'ENG': { code: 'GB-ENG', bg: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)' },
+      'ENGLAND': { code: 'GB-ENG', bg: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)' },
+      'SA': { code: 'ZA', bg: 'linear-gradient(135deg, #15803d 0%, #14532d 100%)' },
+      'SOUTH AFRICA': { code: 'ZA', bg: 'linear-gradient(135deg, #15803d 0%, #14532d 100%)' },
+      'NZ': { code: 'NZ', bg: 'linear-gradient(135deg, #1f2937 0%, #030712 100%)' },
+      'NEW ZEALAND': { code: 'NZ', bg: 'linear-gradient(135deg, #1f2937 0%, #030712 100%)' },
+      'BAN': { code: 'BD', bg: 'linear-gradient(135deg, #065f46 0%, #022c22 100%)' },
+      'BANGLADESH': { code: 'BD', bg: 'linear-gradient(135deg, #065f46 0%, #022c22 100%)' },
+      'WI': { code: 'WI', bg: 'linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%)' },
+      'AFG': { code: 'AF', bg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' },
+      'CSK': { code: 'CSK', bg: 'linear-gradient(135deg, #facc15 0%, #ca8a04 100%)' },
+      'MI': { code: 'MI', bg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' },
+      'RCB': { code: 'RCB', bg: 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' },
+      'KKR': { code: 'KKR', bg: 'linear-gradient(135deg, #581c87 0%, #3b0764 100%)' }
+    };
+
     const BUILTIN_MATCHES = [
       {
         id: 'sl-pak',
-        label: 'SRI LANKA vs PAKISTAN - ODI [LIVE]',
-        statusTag: 'LIVE',
+        label: 'SRI LANKA vs PAKISTAN - ODI [PRESET]',
+        statusTag: 'PRESET',
         batTeam: 'SRI LANKA',
         batCode: 'LK',
         batBg: 'linear-gradient(135deg, #d4a000 0%, #9e7400 100%)',
@@ -601,8 +625,8 @@
       },
       {
         id: 'ind-aus',
-        label: 'INDIA vs AUSTRALIA - T20I [LIVE]',
-        statusTag: 'LIVE',
+        label: 'INDIA vs AUSTRALIA - T20I [PRESET]',
+        statusTag: 'PRESET',
         batTeam: 'INDIA',
         batCode: 'IN',
         batBg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)',
@@ -617,26 +641,9 @@
         bottomText: 'AUS OPT TO BOWL'
       },
       {
-        id: 'ind-pak',
-        label: 'INDIA vs PAKISTAN - CHAMPIONS CUP [SCHEDULED]',
-        statusTag: 'SCHEDULED',
-        batTeam: 'INDIA',
-        batCode: 'IN',
-        batBg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)',
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        lastBall: 'VS',
-        bowlTeam: 'PAKISTAN',
-        bowlCode: 'PK',
-        bowlBg: 'linear-gradient(135deg, #046a38 0%, #024222 100%)',
-        bowlStatus: 'SCHEDULED',
-        bottomText: 'MATCH STARTS AT 7:30 PM IST'
-      },
-      {
         id: 'csk-mi',
-        label: 'CHENNAI vs MUMBAI - IPL [LIVE]',
-        statusTag: 'LIVE',
+        label: 'CHENNAI vs MUMBAI - IPL [PRESET]',
+        statusTag: 'PRESET',
         batTeam: 'CHENNAI',
         batCode: 'CSK',
         batBg: 'linear-gradient(135deg, #facc15 0%, #ca8a04 100%)',
@@ -652,8 +659,8 @@
       },
       {
         id: 'rcb-kkr',
-        label: 'BENGALURU vs KOLKATA - IPL [SCHEDULED]',
-        statusTag: 'SCHEDULED',
+        label: 'BENGALURU vs KOLKATA - IPL [PRESET]',
+        statusTag: 'PRESET',
         batTeam: 'BENGALURU',
         batCode: 'RCB',
         batBg: 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)',
@@ -666,87 +673,20 @@
         bowlBg: 'linear-gradient(135deg, #581c87 0%, #3b0764 100%)',
         bowlStatus: 'SCHEDULED',
         bottomText: 'TOSS AT 7:00 PM IST'
-      },
-      {
-        id: 'srh-rr',
-        label: 'HYDERABAD vs RAJASTHAN - IPL [SCHEDULED]',
-        statusTag: 'SCHEDULED',
-        batTeam: 'HYDERABAD',
-        batCode: 'SRH',
-        batBg: 'linear-gradient(135deg, #ea580c 0%, #9a3412 100%)',
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        lastBall: 'VS',
-        bowlTeam: 'RAJASTHAN',
-        bowlCode: 'RR',
-        bowlBg: 'linear-gradient(135deg, #db2777 0%, #831843 100%)',
-        bowlStatus: 'SCHEDULED',
-        bottomText: 'IPL SCHEDULED MATCH'
-      },
-      {
-        id: 'gt-lsg',
-        label: 'GUJARAT vs LUCKNOW - IPL [SCHEDULED]',
-        statusTag: 'SCHEDULED',
-        batTeam: 'GUJARAT',
-        batCode: 'GT',
-        batBg: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        lastBall: 'VS',
-        bowlTeam: 'LUCKNOW',
-        bowlCode: 'LSG',
-        bowlBg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-        bowlStatus: 'SCHEDULED',
-        bottomText: 'IPL SCHEDULED MATCH'
-      },
-      {
-        id: 'dc-pbks',
-        label: 'DELHI vs PUNJAB - IPL [SCHEDULED]',
-        statusTag: 'SCHEDULED',
-        batTeam: 'DELHI',
-        batCode: 'DC',
-        batBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        lastBall: 'VS',
-        bowlTeam: 'PUNJAB',
-        bowlCode: 'PBKS',
-        bowlBg: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-        bowlStatus: 'SCHEDULED',
-        bottomText: 'IPL SCHEDULED MATCH'
-      },
-      {
-        id: 'eng-sa',
-        label: 'ENGLAND vs SOUTH AFRICA - ODI [LIVE]',
-        statusTag: 'LIVE',
-        batTeam: 'ENGLAND',
-        batCode: 'GB-ENG',
-        batBg: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)',
-        runs: 215,
-        wickets: 6,
-        balls: 210,
-        lastBall: '1',
-        bowlTeam: 'SOUTH AFRICA',
-        bowlCode: 'ZA',
-        bowlBg: 'linear-gradient(135deg, #15803d 0%, #14532d 100%)',
-        bowlStatus: 'BOWLING',
-        bottomText: 'ENG OPT TO BAT'
       }
     ];
 
     let allMatches = [...BUILTIN_MATCHES];
-    let selectedMatchId = 'sl-pak';
+    let selectedMatchId = 'auto';
+    let userManuallySelected = false;
     let currentMatch = { ...BUILTIN_MATCHES[0] };
 
     const DEMO_COMMENTS = [
       { author: 'Arjun Menon', text: 'What a brilliant spell of bowling! Complete pressure on the batters.' },
-      { author: 'Rahul Nair', text: 'Sri Lanka needs a solid partnership right now to cross 200.' },
+      { author: 'Rahul Nair', text: 'Need a solid partnership right now to build a big total.' },
       { author: 'Vishnu Kumar', text: 'Great stream bro, scoreboard overlay looks just like TV broadcast!' },
-      { author: 'Faisal Khan', text: 'Pakistan bowlers are hitting the deck hard today.' },
-      { author: 'Sneha Raj', text: 'Waiting for India vs Australia match next!' }
+      { author: 'Faisal Khan', text: 'Bowlers are hitting the deck hard today.' },
+      { author: 'Sneha Raj', text: 'Awesome live commentary and real-time score updates!' }
     ];
     let demoIndex = 0;
     let ytLiveChatId = null;
@@ -778,9 +718,7 @@
     document.getElementById('ytApiKeyInput').value = initialApiKey;
     document.getElementById('ytVideoIdInput').value = initialVideoId;
 
-    if (paramBg) {
-      setBgMode('bg-' + paramBg);
-    }
+    if (paramBg) setBgMode('bg-' + paramBg);
 
     function updateGeneratedUrlPreview() {
       const base = window.location.origin + window.location.pathname;
@@ -788,7 +726,7 @@
       const vid = extractVideoId(document.getElementById('ytVideoIdInput').value.trim());
       const aiOn = aiReaderToggle.checked ? '1' : '0';
       const p = new URLSearchParams();
-      if (selectedMatchId) p.set('match', selectedMatchId);
+      if (selectedMatchId && selectedMatchId !== 'auto') p.set('match', selectedMatchId);
       if (key) p.set('key', key);
       if (vid) p.set('vid', vid);
       if (aiOn === '1') p.set('ai', '1');
@@ -801,7 +739,7 @@
       const url = updateGeneratedUrlPreview();
       if (navigator.clipboard) {
         navigator.clipboard.writeText(url);
-        document.getElementById('voiceStatusText').textContent = 'Copied PRISM Direct URL! Paste into PRISM Edit URL.';
+        document.getElementById('voiceStatusText').textContent = 'Copied PRISM Direct URL!';
       }
     });
 
@@ -839,7 +777,7 @@
       if (cleanCode.length === 2 || cleanCode === 'gb-eng') {
         el.innerHTML = `<img src="https://flagcdn.com/w160/${cleanCode}.png" alt="${teamName}" onerror="this.style.display='none';this.parentNode.textContent='${teamName.slice(0,3)}';" />`;
       } else {
-        el.textContent = code || teamName.slice(0, 3);
+        el.textContent = (code || teamName).slice(0, 4).toUpperCase();
       }
     }
 
@@ -856,6 +794,7 @@
 
     matchSelectBox.addEventListener('change', (e) => {
       selectedMatchId = e.target.value;
+      userManuallySelected = true;
       const selected = allMatches.find(m => m.id === selectedMatchId);
       if (selected) {
         currentMatch = { ...selected };
@@ -863,16 +802,38 @@
       }
     });
 
-    // Auto-Refreshing ESPN Live Scoreboard Feed (Cache-busted every 15 seconds)
+    // Multi-Source Resilient Fetcher (Direct + CORS Proxies)
+    async function fetchJsonWithCorsFallback(targetUrl) {
+      const bustUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
+      const endpoints = [
+        bustUrl,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(bustUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(bustUrl)}`
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 5000);
+          const res = await fetch(ep, { cache: 'no-store', signal: controller.signal });
+          clearTimeout(timer);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          // Try next proxy
+        }
+      }
+      throw new Error('All live endpoints unreachable');
+    }
+
     async function fetchEspnMatches(isAuto = false) {
       const statusEl = document.getElementById('espnStatusText');
-      if (!isAuto) statusEl.textContent = 'Refreshing live scores...';
+      const liveDot = document.getElementById('liveDot');
+      if (!isAuto) statusEl.textContent = 'Syncing live cricket scores...';
+
       try {
-        const cacheBuster = Date.now();
-        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel?_t=${cacheBuster}`, {
-          cache: 'no-store'
-        });
-        const data = await res.json();
+        const data = await fetchJsonWithCorsFallback('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel');
         const espnList = [];
 
         if (data && data.scores) {
@@ -885,47 +846,58 @@
 
               const comps = ev.competitions?.[0]?.competitors || [];
               if (comps.length >= 2) {
-                // Determine batting team (usually team with score or first team)
                 let bat = comps[0];
                 let bowl = comps[1];
-                if (comps[1].score && !comps[0].score) {
-                  bat = comps[1];
-                  bowl = comps[0];
+                // Identify active batting team
+                if (comps[1].score && (!comps[0].score || comps[1].winner === false)) {
+                  const s0 = String(comps[0].score || '');
+                  const s1 = String(comps[1].score || '');
+                  if (s1.includes('/') && !s0.includes('/')) {
+                    bat = comps[1];
+                    bowl = comps[0];
+                  }
                 }
 
-                const name1 = (bat.team?.shortDisplayName || bat.team?.name || 'TEAM 1').toUpperCase();
-                const name2 = (bowl.team?.shortDisplayName || bowl.team?.name || 'TEAM 2').toUpperCase();
-                const rawScore = (bat.score || '0/0').toString();
+                const abbr1 = (bat.team?.abbreviation || '').toUpperCase();
+                const abbr2 = (bowl.team?.abbreviation || '').toUpperCase();
+                const name1 = (bat.team?.shortDisplayName || bat.team?.name || abbr1 || 'TEAM 1').toUpperCase();
+                const name2 = (bowl.team?.shortDisplayName || bowl.team?.name || abbr2 || 'TEAM 2').toUpperCase();
+
+                const rawScore = String(bat.score || '0/0');
                 const scoreMatch = rawScore.match(/(\d+)[\/\-](\d+)/);
                 const runs = scoreMatch ? parseInt(scoreMatch[1], 10) : (parseInt(rawScore, 10) || 0);
                 const wkts = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;
 
-                // Extract overs if available in score string e.g., "145/3 (16.4 ov)"
                 const ovMatch = rawScore.match(/\(([\d\.]+)\s*ov/i);
                 const oversStr = ovMatch ? ovMatch[1] : null;
-                let balls = tag === 'LIVE' ? 60 : 0;
+                let balls = 0;
                 if (oversStr) {
                   const ovParts = oversStr.split('.');
                   balls = (parseInt(ovParts[0], 10) || 0) * 6 + (parseInt(ovParts[1], 10) || 0);
                 }
+
+                const style1 = TEAM_STYLES[abbr1] || TEAM_STYLES[name1] || { code: abbr1 || name1.slice(0, 3), bg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' };
+                const style2 = TEAM_STYLES[abbr2] || TEAM_STYLES[name2] || { code: abbr2 || name2.slice(0, 3), bg: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)' };
+
+                const detailText = (ev.status?.type?.shortDetail || ev.status?.type?.detail || tag).toUpperCase();
 
                 espnList.push({
                   id: 'espn-' + ev.id,
                   label: `${name1} vs ${name2} [${tag}]`,
                   statusTag: tag,
                   batTeam: name1,
-                  batCode: (bat.team?.abbreviation || name1.slice(0, 3)).toUpperCase(),
-                  batBg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
+                  batCode: style1.code,
+                  batBg: style1.bg,
                   runs: runs,
                   wickets: wkts,
                   balls: balls,
-                  oversStr: oversStr,
-                  lastBall: tag === 'LIVE' ? '•' : 'VS',
+                  oversStr: oversStr || (balls > 0 ? (Math.floor(balls / 6) + '.' + (balls % 6)) : '0.0'),
+                  lastBall: tag === 'LIVE' ? 'LIVE' : 'VS',
                   bowlTeam: name2,
-                  bowlCode: (bowl.team?.abbreviation || name2.slice(0, 3)).toUpperCase(),
-                  bowlBg: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)',
+                  bowlCode: style2.code,
+                  bowlBg: style2.bg,
                   bowlStatus: tag === 'LIVE' ? 'BOWLING' : tag,
-                  bottomText: (ev.status?.type?.detail || tag).toUpperCase()
+                  bottomText: detailText
                 });
               }
             });
@@ -934,32 +906,37 @@
 
         if (espnList.length > 0) {
           allMatches = [...espnList, ...BUILTIN_MATCHES];
-          // Auto-select first LIVE ESPN match if user hasn't picked a custom match
-          if (selectedMatchId === 'sl-pak' && espnList.some(m => m.statusTag === 'LIVE')) {
-            const firstLive = espnList.find(m => m.statusTag === 'LIVE');
-            selectedMatchId = firstLive.id;
+
+          // Auto-select first LIVE ESPN match unless user manually picked a preset
+          if (!userManuallySelected) {
+            const firstLive = espnList.find(m => m.statusTag === 'LIVE') || espnList[0];
+            if (firstLive) selectedMatchId = firstLive.id;
           }
+
           const updatedSelected = allMatches.find(m => m.id === selectedMatchId);
           if (updatedSelected) {
             currentMatch = { ...updatedSelected };
             renderScoreboard();
           }
           populateMatchDropdown();
+          liveDot.style.background = '#22c55e';
           const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          statusEl.textContent = `Auto-Updated at ${nowTime} (${espnList.length} Live/Scheduled matches)`;
+          statusEl.textContent = `LIVE SYNC OK (${nowTime}) — ${espnList.length} matches`;
         } else {
           allMatches = [...BUILTIN_MATCHES];
           populateMatchDropdown();
-          statusEl.textContent = 'Auto-Refresh Active (Every 15s)';
+          statusEl.textContent = 'No active ESPN matches right now. Use Quick Ball Pad or Presets.';
         }
       } catch (err) {
-        statusEl.textContent = 'Auto-Refresh Active (Offline fallback mode)';
+        liveDot.style.background = '#f59e0b';
+        statusEl.textContent = 'Retrying live feed every 10s (Manual controls active)';
       }
     }
 
     document.getElementById('refreshEspnBtn').addEventListener('click', () => fetchEspnMatches(false));
 
     function recordBall(val) {
+      userManuallySelected = true;
       currentMatch.lastBall = val;
       currentMatch.oversStr = null;
       if (val === 'W') {
@@ -1219,6 +1196,7 @@
 
     if (paramMatch) {
       selectedMatchId = paramMatch.toLowerCase();
+      userManuallySelected = true;
       const found = BUILTIN_MATCHES.find(m => m.id === selectedMatchId);
       if (found) currentMatch = { ...found };
     }
@@ -1227,10 +1205,10 @@
     renderScoreboard();
     fetchEspnMatches(false);
 
-    // Continuous 15-second auto-refresh timer for live scoreboard
+    // Continuous 10-second live sync loop
     setInterval(() => {
       fetchEspnMatches(true);
-    }, 15000);
+    }, 10000);
 
     if (paramSettings === '1') {
       settingsModal.classList.add('open');
