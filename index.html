@@ -51,7 +51,7 @@ body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:135px}
 .badge.ok{background:#065f46;color:#34d399}
 .grp{margin-bottom:10px}
 .grp label{display:block;font-size:11px;color:#9ca3af;margin-bottom:4px;font-weight:600}
-select,input[type=text],input[type=password]{width:100%;background:#1f2937;color:#fff;border:1px solid #374151;border-radius:8px;padding:8px;font-size:13px}
+select,input[type=text],input[type=password]{width:100%;background:#1f2937;color:#fff;border:1px solid #374151;border-radius:8px;padding:8px;font-size:13px;user-select:text}
 .row{display:flex;gap:6px;align-items:center}
 .btn{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btn-g{background:#16a34a}.btn-a{background:#d97706}.btn-r{background:#dc2626}.btn-d{background:#374151}
@@ -85,13 +85,13 @@ select,input[type=text],input[type=password]{width:100%;background:#1f2937;color
     <div class="note" id="espnNote">All IPL & International Teams Ready</div>
   </div>
 
-  <!-- 2. Custom Team Names (Type Any Team Name!) -->
+  <!-- 2. Instant Live Typing Custom Team Names -->
   <div class="grp">
-    <label>2. Or Type Custom Team Names & Score</label>
-    <div class="row" style="margin-bottom:5px">
-      <input type="text" id="custBat" placeholder="Batting Team (e.g. KERALA)">
-      <input type="text" id="custBowl" placeholder="Bowling Team (e.g. TAMIL NADU)">
-      <button class="btn btn-g" onclick="applyCustomTeams()">Apply</button>
+    <label>2. Type Custom Team Names (Updates Instantly as You Type!)</label>
+    <div class="row">
+      <input type="text" id="custBat" placeholder="Batting Team (e.g. KERALA)" oninput="liveTypeTeams()">
+      <input type="text" id="custBowl" placeholder="Bowling Team (e.g. MUMBAI)" oninput="liveTypeTeams()">
+      <button class="btn btn-r" onclick="resetScoreZero()" title="Reset Score to 0-0">0-0</button>
     </div>
   </div>
 
@@ -116,10 +116,9 @@ select,input[type=text],input[type=password]{width:100%;background:#1f2937;color
 
   <!-- 4. Bottom Status Text -->
   <div class="grp">
-    <label>4. Bottom Status / Target Bar</label>
+    <label>4. Bottom Status Bar (Updates Instantly as You Type!)</label>
     <div class="row">
-      <input type="text" id="tickerInp" placeholder="e.g. CSK NEED 24 RUNS IN 12 BALLS">
-      <button class="btn btn-g" onclick="setTicker()">Update</button>
+      <input type="text" id="tickerInp" placeholder="e.g. CSK NEED 24 RUNS IN 12 BALLS" oninput="liveTypeTicker()">
     </div>
   </div>
 
@@ -224,18 +223,33 @@ function buildDropdown(){
 
 document.getElementById('matchSel').onchange=e=>{
   let f=allTeams.find(x=>x.id===e.target.value);
-  if(f){hist.push({...st});st={...st,...f};render();sync();}
+  if(f){
+    hist.push({...st});
+    st={...st,...f};
+    document.getElementById('custBat').value='';
+    document.getElementById('custBowl').value='';
+    render();sync();
+  }
 };
 
-function applyCustomTeams(){
+function liveTypeTeams(){
   let b=document.getElementById('custBat').value.trim().toUpperCase();
   let f=document.getElementById('custBowl').value.trim().toUpperCase();
-  if(!b&&!f)return;
-  hist.push({...st});
   if(b){st.bN=b;st.bC=b.slice(0,3);st.bBg='linear-gradient(135deg,#1d4ed8,#1e3a8a)';}
   if(f){st.fN=f;st.fC=f.slice(0,3);st.fBg='linear-gradient(135deg,#047857,#064e3b)';}
-  st.r=0;st.w=0;st.b=0;st.lb='0';st.fS='BOWLING';st.t=`${st.bN} VS ${st.fN} - LIVE`;
+  st.t=`${st.bN} VS ${st.fN} - LIVE`;
   render();sync();
+}
+
+function resetScoreZero(){
+  hist.push({...st});
+  st.r=0;st.w=0;st.b=0;st.lb='0';st.fS='BOWLING';
+  render();sync();
+}
+
+function liveTypeTicker(){
+  let v=document.getElementById('tickerInp').value.trim();
+  if(v){st.t=v.toUpperCase();render();sync();}
 }
 
 async function fetchESPN(){
@@ -306,7 +320,6 @@ function sync(){
 function addBall(v){hist.push({...st});st.lb=v;if(v==='W'){if(st.w<10)st.w++;st.b++;}else{st.r+=parseInt(v);st.b++;}render();sync();}
 function addExtra(v){hist.push({...st});st.r++;st.lb=v;render();sync();}
 function undoBall(){if(hist.length){st=hist.pop();render();sync();}}
-function setTicker(){let v=document.getElementById('tickerInp').value.trim();if(v){hist.push({...st});st.t=v.toUpperCase();render();sync();}}
 function setBg(b){st.bg=b;render();sync();}
 function swapTeams(){
   hist.push({...st});
@@ -317,7 +330,7 @@ function swapTeams(){
 function openPanel(){document.body.classList.add('ctrl');document.getElementById('panel').classList.add('open');}
 function hidePanel(){document.body.classList.remove('ctrl');document.body.className=st.bg;document.getElementById('panel').classList.remove('open');}
 
-// AI Speech (Name + Comment, Zero Beep)
+// AI Speech
 const DEMOS=[{a:'Arjun',m:'What a fantastic boundary!'},{a:'Rahul',m:'Great bowling spell right now.'},{a:'Vishnu',m:'Awesome live stream bro!'}];
 let dIdx=0,q=[],speaking=false;
 function speak(a,m){
