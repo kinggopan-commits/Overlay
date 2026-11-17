@@ -133,7 +133,6 @@
       object-fit: cover;
     }
 
-    /* Center Black Ball-Result Box (Acts as Settings Trigger) */
     .center-ball-box {
       width: 110px;
       background: radial-gradient(circle at center, #1f2937 0%, #05070a 100%);
@@ -279,12 +278,12 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.78);
+      background: rgba(0, 0, 0, 0.82);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 999;
-      padding: 12px;
+      padding: 10px;
       font-family: 'Segoe UI', Roboto, sans-serif;
     }
 
@@ -297,11 +296,11 @@
       color: #f9fafb;
       width: 100%;
       max-width: 460px;
-      max-height: 90vh;
+      max-height: 92vh;
       overflow-y: auto;
       border-radius: 14px;
       border: 1px solid #374151;
-      padding: 16px;
+      padding: 14px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.85);
     }
 
@@ -310,12 +309,12 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #1f2937;
-      padding-bottom: 10px;
-      margin-bottom: 12px;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .modal-header h3 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       color: #facc15;
     }
@@ -332,15 +331,15 @@
     }
 
     .form-group {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .form-group label {
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: #9ca3af;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
     select, input[type="text"], input[type="password"] {
@@ -349,7 +348,7 @@
       color: #ffffff;
       border: 1px solid #374151;
       border-radius: 8px;
-      padding: 9px 10px;
+      padding: 8px 10px;
       font-size: 13px;
       outline: none;
     }
@@ -369,7 +368,7 @@
       color: #fff;
       border: none;
       border-radius: 8px;
-      padding: 9px 12px;
+      padding: 8px 12px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
@@ -391,7 +390,7 @@
       color: #fff;
       border: 1px solid #374151;
       border-radius: 6px;
-      padding: 8px 0;
+      padding: 7px 0;
       font-weight: 800;
       font-size: 13px;
       cursor: pointer;
@@ -407,20 +406,31 @@
       justify-content: space-between;
       align-items: center;
       background: #1f2937;
-      padding: 9px 12px;
+      padding: 8px 12px;
       border-radius: 8px;
       margin-bottom: 10px;
     }
 
     .toggle-row span {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
     }
 
     .status-note {
       font-size: 11px;
       color: #34d399;
-      margin-top: 4px;
+      margin-top: 3px;
+    }
+
+    .url-box {
+      background: #0f172a;
+      border: 1px dashed #38bdf8;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #e2e8f0;
+      word-break: break-all;
+      margin-top: 6px;
     }
 
     @media (max-width: 600px) {
@@ -478,6 +488,7 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
   <div class="modal-backdrop" id="settingsModal">
     <div class="settings-card">
       <div class="modal-header">
@@ -515,10 +526,12 @@
 
       <div class="form-group">
         <div class="row-flex">
-          <button class="btn btn-green" id="testVoiceBtn" style="flex:1;">🔊 Test Voice (Name + Comment)</button>
+          <button class="btn btn-green" id="testVoiceBtn" style="flex:1;">🔊 Test Voice</button>
           <button class="btn btn-dark" id="readNextDemoBtn">▶ Read Next</button>
+          <button class="btn" id="copyPrismUrlBtn">📋 Copy PRISM Link</button>
         </div>
         <div class="status-note" id="voiceStatusText">Voice Engine: Human TTS Ready (No Beep)</div>
+        <div class="url-box" id="generatedUrlPreview"></div>
       </div>
 
       <div class="form-group">
@@ -600,7 +613,7 @@
       },
       {
         id: 'csk-mi',
-        label: 'CHENNAI vs MUMBAI - T20 LEAGUE [LIVE]',
+        label: 'CHENNAI vs MUMBAI - IPL [LIVE]',
         statusTag: 'LIVE',
         batTeam: 'CHENNAI',
         batCode: 'CSK',
@@ -617,7 +630,7 @@
       },
       {
         id: 'rcb-kkr',
-        label: 'BENGALURU vs KOLKATA - T20 LEAGUE [SCHEDULED]',
+        label: 'BENGALURU vs KOLKATA - IPL [SCHEDULED]',
         statusTag: 'SCHEDULED',
         batTeam: 'BENGALURU',
         batCode: 'RCB',
@@ -631,6 +644,57 @@
         bowlBg: 'linear-gradient(135deg, #581c87 0%, #3b0764 100%)',
         bowlStatus: 'SCHEDULED',
         bottomText: 'TOSS AT 7:00 PM IST'
+      },
+      {
+        id: 'srh-rr',
+        label: 'HYDERABAD vs RAJASTHAN - IPL [SCHEDULED]',
+        statusTag: 'SCHEDULED',
+        batTeam: 'HYDERABAD',
+        batCode: 'SRH',
+        batBg: 'linear-gradient(135deg, #ea580c 0%, #9a3412 100%)',
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        lastBall: 'VS',
+        bowlTeam: 'RAJASTHAN',
+        bowlCode: 'RR',
+        bowlBg: 'linear-gradient(135deg, #db2777 0%, #831843 100%)',
+        bowlStatus: 'SCHEDULED',
+        bottomText: 'IPL SCHEDULED MATCH'
+      },
+      {
+        id: 'gt-lsg',
+        label: 'GUJARAT vs LUCKNOW - IPL [SCHEDULED]',
+        statusTag: 'SCHEDULED',
+        batTeam: 'GUJARAT',
+        batCode: 'GT',
+        batBg: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        lastBall: 'VS',
+        bowlTeam: 'LUCKNOW',
+        bowlCode: 'LSG',
+        bowlBg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+        bowlStatus: 'SCHEDULED',
+        bottomText: 'IPL SCHEDULED MATCH'
+      },
+      {
+        id: 'dc-pbks',
+        label: 'DELHI vs PUNJAB - IPL [SCHEDULED]',
+        statusTag: 'SCHEDULED',
+        batTeam: 'DELHI',
+        batCode: 'DC',
+        batBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        lastBall: 'VS',
+        bowlTeam: 'PUNJAB',
+        bowlCode: 'PBKS',
+        bowlBg: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+        bowlStatus: 'SCHEDULED',
+        bottomText: 'IPL SCHEDULED MATCH'
       },
       {
         id: 'eng-sa',
@@ -648,40 +712,6 @@
         bowlBg: 'linear-gradient(135deg, #15803d 0%, #14532d 100%)',
         bowlStatus: 'BOWLING',
         bottomText: 'ENG OPT TO BAT'
-      },
-      {
-        id: 'nz-ban',
-        label: 'NEW ZEALAND vs BANGLADESH - TEST [SCHEDULED]',
-        statusTag: 'SCHEDULED',
-        batTeam: 'NEW ZEALAND',
-        batCode: 'NZ',
-        batBg: 'linear-gradient(135deg, #1f2937 0%, #030712 100%)',
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        lastBall: 'VS',
-        bowlTeam: 'BANGLADESH',
-        bowlCode: 'BD',
-        bowlBg: 'linear-gradient(135deg, #065f46 0%, #022c22 100%)',
-        bowlStatus: 'SCHEDULED',
-        bottomText: 'DAY 1 STARTS SOON'
-      },
-      {
-        id: 'wi-afg',
-        label: 'WEST INDIES vs AFGHANISTAN - T20I [SCHEDULED]',
-        statusTag: 'SCHEDULED',
-        batTeam: 'WEST INDIES',
-        batCode: 'WI',
-        batBg: 'linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%)',
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        lastBall: 'VS',
-        bowlTeam: 'AFGHANISTAN',
-        bowlCode: 'AF',
-        bowlBg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
-        bowlStatus: 'SCHEDULED',
-        bottomText: 'SCHEDULED MATCH'
       }
     ];
 
@@ -712,8 +742,46 @@
     const aiDot = document.getElementById('aiDot');
     const aiToast = document.getElementById('aiToast');
 
-    document.getElementById('ytApiKeyInput').value = localStorage.getItem('yt_api_key') || '';
-    document.getElementById('ytVideoIdInput').value = localStorage.getItem('yt_video_id') || '';
+    // Parse URL Parameters for PRISM Live Zero-Touch Configuration
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramSettings = urlParams.get('settings');
+    const paramKey = urlParams.get('key');
+    const paramVid = urlParams.get('vid');
+    const paramMatch = urlParams.get('match');
+    const paramAi = urlParams.get('ai');
+    const paramBg = urlParams.get('bg');
+
+    const initialApiKey = paramKey || localStorage.getItem('yt_api_key') || '';
+    const initialVideoId = paramVid || localStorage.getItem('yt_video_id') || '';
+    document.getElementById('ytApiKeyInput').value = initialApiKey;
+    document.getElementById('ytVideoIdInput').value = initialVideoId;
+
+    if (paramBg) {
+      setBgMode('bg-' + paramBg);
+    }
+
+    function updateGeneratedUrlPreview() {
+      const base = window.location.origin + window.location.pathname;
+      const key = document.getElementById('ytApiKeyInput').value.trim();
+      const vid = extractVideoId(document.getElementById('ytVideoIdInput').value.trim());
+      const aiOn = aiReaderToggle.checked ? '1' : '0';
+      const p = new URLSearchParams();
+      if (currentMatch && currentMatch.id) p.set('match', currentMatch.id);
+      if (key) p.set('key', key);
+      if (vid) p.set('vid', vid);
+      if (aiOn === '1') p.set('ai', '1');
+      const fullUrl = p.toString() ? `${base}?${p.toString()}` : base;
+      document.getElementById('generatedUrlPreview').textContent = 'PRISM Direct URL: ' + fullUrl;
+      return fullUrl;
+    }
+
+    document.getElementById('copyPrismUrlBtn').addEventListener('click', () => {
+      const url = updateGeneratedUrlPreview();
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url);
+        document.getElementById('voiceStatusText').textContent = 'Copied PRISM Direct URL! Paste into PRISM Edit URL.';
+      }
+    });
 
     function renderScoreboard() {
       document.getElementById('batTeamName').textContent = currentMatch.batTeam;
@@ -740,6 +808,7 @@
 
       setFlagBadge('batFlag', currentMatch.batCode, currentMatch.batTeam);
       setFlagBadge('bowlFlag', currentMatch.bowlCode, currentMatch.bowlTeam);
+      updateGeneratedUrlPreview();
     }
 
     function setFlagBadge(elId, code, teamName) {
@@ -758,6 +827,7 @@
         const opt = document.createElement('option');
         opt.value = idx;
         opt.textContent = m.label;
+        if (m.id === currentMatch.id) opt.selected = true;
         matchSelectBox.appendChild(opt);
       });
     }
@@ -822,11 +892,11 @@
         if (espnList.length > 0) {
           allMatches = [...espnList, ...BUILTIN_MATCHES];
           populateMatchDropdown();
-          statusEl.textContent = `Loaded ${espnList.length} ESPN matches + Built-in Teams!`;
+          statusEl.textContent = `Loaded ${espnList.length} ESPN matches + IPL & International Teams!`;
         } else {
           allMatches = [...BUILTIN_MATCHES];
           populateMatchDropdown();
-          statusEl.textContent = 'Loaded all [LIVE] & [SCHEDULED] team matchups.';
+          statusEl.textContent = 'Loaded all [LIVE] & [SCHEDULED] IPL & International matchups.';
         }
       } catch (err) {
         allMatches = [...BUILTIN_MATCHES];
@@ -857,6 +927,7 @@
     centerSettingsBtn.addEventListener('click', () => {
       unlockAudioEngine();
       settingsModal.classList.add('open');
+      updateGeneratedUrlPreview();
     });
 
     closeModalBtn.addEventListener('click', () => {
@@ -879,7 +950,7 @@
     }
 
     function enqueueCommentSpeech(author, comment) {
-      const cleanAuthor = (author || 'Viewer').replace(/[^\w\sഀ-ൿ]/g, '').trim();
+      const cleanAuthor = (author || 'Viewer').replace(/[^\w\s\u0D00-\u0D7F]/g, '').trim();
       const cleanComment = (comment || '').trim();
       if (!cleanComment) return;
 
@@ -974,11 +1045,13 @@
     }
 
     let demoInterval = null;
-    aiReaderToggle.addEventListener('change', (e) => {
-      unlockAudioEngine();
-      if (e.target.checked) {
+    function setAiReaderState(enabled) {
+      aiReaderToggle.checked = enabled;
+      updateGeneratedUrlPreview();
+      if (enabled) {
         aiDot.classList.add('ai-active');
         readNextComment();
+        clearInterval(demoInterval);
         demoInterval = setInterval(() => {
           if (!ytLiveChatId) readNextComment();
         }, 12000);
@@ -990,6 +1063,11 @@
         if (currentAudioEl) currentAudioEl.pause();
         isSpeaking = false;
       }
+    }
+
+    aiReaderToggle.addEventListener('change', (e) => {
+      unlockAudioEngine();
+      setAiReaderState(e.target.checked);
     });
 
     function readNextComment() {
@@ -1016,14 +1094,13 @@
       return val;
     }
 
-    document.getElementById('connectYtBtn').addEventListener('click', async () => {
-      const apiKey = document.getElementById('ytApiKeyInput').value.trim();
-      const rawVideo = document.getElementById('ytVideoIdInput').value.trim();
+    async function connectYoutubeLiveChat(apiKey, rawVideo) {
       const videoId = extractVideoId(rawVideo);
       const statusEl = document.getElementById('ytChatStatus');
 
       localStorage.setItem('yt_api_key', apiKey);
       localStorage.setItem('yt_video_id', rawVideo);
+      updateGeneratedUrlPreview();
 
       if (!apiKey || !videoId) {
         statusEl.textContent = 'Please enter both YouTube API Key and Live Video ID.';
@@ -1051,6 +1128,12 @@
       } catch (err) {
         statusEl.textContent = 'Connection failed. Verify API Key permissions.';
       }
+    }
+
+    document.getElementById('connectYtBtn').addEventListener('click', () => {
+      const apiKey = document.getElementById('ytApiKeyInput').value.trim();
+      const rawVideo = document.getElementById('ytVideoIdInput').value.trim();
+      connectYoutubeLiveChat(apiKey, rawVideo);
     });
 
     function startYoutubeChatPolling(apiKey) {
@@ -1079,9 +1162,24 @@
       ytPollTimer = setInterval(poll, 6000);
     }
 
+    // Apply URL Parameters on Load
+    if (paramMatch) {
+      const found = BUILTIN_MATCHES.find(m => m.id === paramMatch.toLowerCase());
+      if (found) currentMatch = { ...found };
+    }
+
     populateMatchDropdown();
     renderScoreboard();
     fetchEspnMatches();
+
+    if (paramSettings === '1') {
+      settingsModal.classList.add('open');
+    }
+    if (initialApiKey && initialVideoId) {
+      connectYoutubeLiveChat(initialApiKey, initialVideoId);
+    } else if (paramAi === '1') {
+      setAiReaderState(true);
+    }
   </script>
 </body>
 </html>
