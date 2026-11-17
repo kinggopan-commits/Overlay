@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Live Cricket Broadcast Overlay</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
@@ -10,7 +11,7 @@
 html,body{width:100%;height:100%;background:transparent;font-family:'Arial Black',Arial,sans-serif;overflow:hidden}
 body.bg-green{background:#00b140}
 body.bg-dark{background:#0b0f19}
-body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:135px}
+body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:140px}
 
 .overlay{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:98%;max-width:1100px;z-index:100;filter:drop-shadow(0 6px 14px rgba(0,0,0,.8))}
 .top-bar{height:4px;background:linear-gradient(90deg,#b30000,#ff1e1e,#b30000);border-radius:6px 6px 0 0}
@@ -42,7 +43,7 @@ body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:135px}
 
 .toast{position:fixed;bottom:118px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Remote Control Panel */
+/* Control Panel */
 .panel{display:none;max-width:520px;margin:10px auto;background:#111827;color:#fff;border:1px solid #374151;border-radius:12px;padding:14px;font-family:sans-serif}
 .panel.open{display:block}
 .p-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid #1f2937;padding-bottom:8px}
@@ -52,6 +53,7 @@ body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:135px}
 .grp{margin-bottom:10px}
 .grp label{display:block;font-size:11px;color:#9ca3af;margin-bottom:4px;font-weight:600}
 select,input[type=text],input[type=password]{width:100%;background:#1f2937;color:#fff;border:1px solid #374151;border-radius:8px;padding:8px;font-size:13px;user-select:text}
+input[type=color]{width:42px;height:34px;border:none;border-radius:6px;background:transparent;cursor:pointer}
 .row{display:flex;gap:6px;align-items:center}
 .btn{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btn-g{background:#16a34a}.btn-a{background:#d97706}.btn-r{background:#dc2626}.btn-d{background:#374151}
@@ -59,6 +61,7 @@ select,input[type=text],input[type=password]{width:100%;background:#1f2937;color
 .pad button{background:#1f2937;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:12px 0;font-size:16px;font-weight:900;cursor:pointer}
 .pad button:active{background:#38bdf8;color:#000}
 .note{font-size:11px;color:#34d399;margin-top:4px}
+.url-out{background:#0f172a;border:1px dashed #38bdf8;padding:8px;border-radius:8px;font-size:11px;color:#e2e8f0;word-break:break-all;margin-top:6px;user-select:text}
 
 @media(max-width:600px){
   .main{height:62px}.score{font-size:21px}.overs{font-size:11px}.bowl-lbl{font-size:17px}
@@ -70,34 +73,33 @@ select,input[type=text],input[type=password]{width:100%;background:#1f2937;color
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket & AI Controller</h3>
+    <h3>🎛️ Live Cricket & Theme Controller</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
-  <!-- 1. All Teams & ESPN Live Dropdown -->
+  <!-- 1. Select Preset Team Match -->
   <div class="grp">
-    <label>1. Select Match / Teams ([LIVE] & [SCHEDULED])</label>
+    <label>1. Select Match / IPL Teams (Locked Once Selected)</label>
     <div class="row">
       <select id="matchSel"></select>
-      <button class="btn btn-a" onclick="fetchESPN()" title="Refresh ESPN">🔄</button>
       <button class="btn btn-d" onclick="swapTeams()">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">All IPL & International Teams Ready</div>
   </div>
 
-  <!-- 2. Instant Live Typing Custom Team Names -->
+  <!-- 2. Custom Team Names + Theme Color Pickers -->
   <div class="grp">
-    <label>2. Type Custom Team Names (Updates Instantly as You Type!)</label>
-    <div class="row">
-      <input type="text" id="custBat" placeholder="Batting Team (e.g. KERALA)" oninput="liveTypeTeams()">
-      <input type="text" id="custBowl" placeholder="Bowling Team (e.g. MUMBAI)" oninput="liveTypeTeams()">
-      <button class="btn btn-r" onclick="resetScoreZero()" title="Reset Score to 0-0">0-0</button>
+    <label>2. Type Custom Team Names & Colors (Updates Immediately)</label>
+    <div class="row" style="margin-bottom:5px">
+      <input type="text" id="custBat" placeholder="Batting Team" oninput="liveTypeTeams()">
+      <input type="color" id="col1" value="#d4a000" onchange="liveTypeTeams()">
+      <input type="text" id="custBowl" placeholder="Bowling Team" oninput="liveTypeTeams()">
+      <input type="color" id="col2" value="#046a38" onchange="liveTypeTeams()">
     </div>
   </div>
 
   <!-- 3. Ball Control Pad -->
   <div class="grp">
-    <label>3. Live Ball Pad (Updates PRISM Instantly)</label>
+    <label>3. Live Ball Pad</label>
     <div class="pad">
       <button onclick="addBall('0')">0</button>
       <button onclick="addBall('1')">1</button>
@@ -110,21 +112,27 @@ select,input[type=text],input[type=password]{width:100%;background:#1f2937;color
     <div class="row" style="margin-top:6px">
       <button class="btn btn-d" style="flex:1" onclick="addExtra('WD')">+1 WD</button>
       <button class="btn btn-d" style="flex:1" onclick="addExtra('NB')">+1 NB</button>
+      <button class="btn btn-r" onclick="resetScoreZero()">0-0 Reset</button>
       <button class="btn btn-r" onclick="undoBall()">↩ Undo</button>
     </div>
   </div>
 
   <!-- 4. Bottom Status Text -->
   <div class="grp">
-    <label>4. Bottom Status Bar (Updates Instantly as You Type!)</label>
-    <div class="row">
-      <input type="text" id="tickerInp" placeholder="e.g. CSK NEED 24 RUNS IN 12 BALLS" oninput="liveTypeTicker()">
-    </div>
+    <label>4. Bottom Status / Target Text</label>
+    <input type="text" id="tickerInp" placeholder="e.g. CSK NEED 24 RUNS IN 12 BALLS" oninput="liveTypeTicker()">
   </div>
 
-  <!-- 5. YouTube API Key & Live Chat -->
+  <!-- 5. Copy Direct PRISM URL -->
   <div class="grp">
-    <label>5. YouTube Data API v3 Key & Live Video ID</label>
+    <label>5. Copy Direct Link for PRISM Live (Never Resets!)</label>
+    <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct PRISM Link</button>
+    <div class="url-out" id="prismUrlBox"></div>
+  </div>
+
+  <!-- 6. YouTube API Key & AI Voice -->
+  <div class="grp">
+    <label>6. YouTube API Key & Live Video ID</label>
     <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px">
     <div class="row">
       <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID">
@@ -133,19 +141,17 @@ select,input[type=text],input[type=password]{width:100%;background:#1f2937;color
     <div class="note" id="ytNote">Demo Mode Ready</div>
   </div>
 
-  <!-- 6. AI Comment Reader -->
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px">
-    <span style="font-size:13px;font-weight:700">🎙️ AI Comment Reader (Name + Comment)</span>
+    <span style="font-size:13px;font-weight:700">🎙️ AI Voice (Name + Comment)</span>
     <input type="checkbox" id="aiChk" style="width:20px;height:20px" onchange="toggleAI(this.checked)">
   </div>
 
   <div class="grp row">
     <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Voice</button>
     <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
-    <button class="btn" onclick="hidePanel()">Hide Panel</button>
+    <button class="btn" onclick="hidePanel()">Hide</button>
   </div>
 
-  <!-- 7. Background Mode -->
   <div class="grp row" style="margin-bottom:0">
     <button class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent')">Transparent</button>
     <button class="btn btn-g" style="flex:1" onclick="setBg('bg-green')">Green Screen</button>
@@ -191,43 +197,43 @@ select,input[type=text],input[type=password]{width:100%;background:#1f2937;color
 
 <script>
 const BUILTIN_TEAMS=[
-  {id:'sl-pak',lbl:'SRI LANKA vs PAKISTAN - ODI [LIVE]',bN:'SRI LANKA',bC:'lk',bBg:'linear-gradient(135deg,#d4a000,#9e7400)',r:66,w:5,b:134,lb:'2',fN:'PAKISTAN',fC:'pk',fBg:'linear-gradient(135deg,#046a38,#024222)',fS:'BOWLING',t:'PAK OPT TO BOWL'},
-  {id:'ind-aus',lbl:'INDIA vs AUSTRALIA - T20I [LIVE]',bN:'INDIA',bC:'in',bBg:'linear-gradient(135deg,#0057b8,#00357a)',r:184,w:3,b:104,lb:'6',fN:'AUSTRALIA',fC:'au',fBg:'linear-gradient(135deg,#eab308,#a16207)',fS:'BOWLING',t:'AUS OPT TO BOWL'},
-  {id:'ind-pak',lbl:'INDIA vs PAKISTAN - CUP [SCHEDULED]',bN:'INDIA',bC:'in',bBg:'linear-gradient(135deg,#0057b8,#00357a)',r:0,w:0,b:0,lb:'VS',fN:'PAKISTAN',fC:'pk',fBg:'linear-gradient(135deg,#046a38,#024222)',fS:'SCHEDULED',t:'MATCH STARTS AT 7:30 PM IST'},
-  {id:'csk-mi',lbl:'CHENNAI (CSK) vs MUMBAI (MI) - IPL [LIVE]',bN:'CHENNAI',bC:'CSK',bBg:'linear-gradient(135deg,#facc15,#ca8a04)',r:142,w:4,b:90,lb:'4',fN:'MUMBAI',fC:'MI',fBg:'linear-gradient(135deg,#1d4ed8,#1e3a8a)',fS:'BOWLING',t:'MUMBAI OPT TO BOWL'},
-  {id:'rcb-kkr',lbl:'BENGALURU (RCB) vs KOLKATA (KKR) - IPL [SCHEDULED]',bN:'BENGALURU',bC:'RCB',bBg:'linear-gradient(135deg,#dc2626,#7f1d1d)',r:0,w:0,b:0,lb:'VS',fN:'KOLKATA',fC:'KKR',fBg:'linear-gradient(135deg,#581c87,#3b0764)',fS:'SCHEDULED',t:'TOSS AT 7:00 PM IST'},
-  {id:'srh-rr',lbl:'HYDERABAD (SRH) vs RAJASTHAN (RR) - IPL [SCHEDULED]',bN:'HYDERABAD',bC:'SRH',bBg:'linear-gradient(135deg,#ea580c,#9a3412)',r:0,w:0,b:0,lb:'VS',fN:'RAJASTHAN',fC:'RR',fBg:'linear-gradient(135deg,#db2777,#831843)',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
-  {id:'gt-lsg',lbl:'GUJARAT (GT) vs LUCKNOW (LSG) - IPL [SCHEDULED]',bN:'GUJARAT',bC:'GT',bBg:'linear-gradient(135deg,#1e293b,#0f172a)',r:0,w:0,b:0,lb:'VS',fN:'LUCKNOW',fC:'LSG',fBg:'linear-gradient(135deg,#0284c7,#0369a1)',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
-  {id:'dc-pbks',lbl:'DELHI (DC) vs PUNJAB (PBKS) - IPL [SCHEDULED]',bN:'DELHI',bC:'DC',bBg:'linear-gradient(135deg,#2563eb,#1d4ed8)',r:0,w:0,b:0,lb:'VS',fN:'PUNJAB',fC:'PBKS',fBg:'linear-gradient(135deg,#dc2626,#991b1b)',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
-  {id:'eng-sa',lbl:'ENGLAND vs SOUTH AFRICA - ODI [LIVE]',bN:'ENGLAND',bC:'gb-eng',bBg:'linear-gradient(135deg,#1e40af,#172554)',r:215,w:6,b:210,lb:'1',fN:'SOUTH AFRICA',fC:'za',fBg:'linear-gradient(135deg,#15803d,#14532d)',fS:'BOWLING',t:'ENG OPT TO BAT'},
-  {id:'nz-ban',lbl:'NEW ZEALAND vs BANGLADESH [SCHEDULED]',bN:'NEW ZEALAND',bC:'nz',bBg:'linear-gradient(135deg,#1f2937,#030712)',r:0,w:0,b:0,lb:'VS',fN:'BANGLADESH',fC:'bd',fBg:'linear-gradient(135deg,#065f46,#022c22)',fS:'SCHEDULED',t:'SCHEDULED MATCH'},
-  {id:'wi-afg',lbl:'WEST INDIES vs AFGHANISTAN [SCHEDULED]',bN:'WEST INDIES',bC:'wi',bBg:'linear-gradient(135deg,#7f1d1d,#450a0a)',r:0,w:0,b:0,lb:'VS',fN:'AFGHANISTAN',fC:'af',fBg:'linear-gradient(135deg,#1d4ed8,#1e3a8a)',fS:'SCHEDULED',t:'SCHEDULED MATCH'}
+  {id:'sl-pak',lbl:'SRI LANKA vs PAKISTAN - ODI [LIVE]',bN:'SRI LANKA',bC:'lk',c1:'#d4a000',r:66,w:5,b:134,lb:'2',fN:'PAKISTAN',fC:'pk',c2:'#046a38',fS:'BOWLING',t:'PAK OPT TO BOWL'},
+  {id:'ind-aus',lbl:'INDIA vs AUSTRALIA - T20I [LIVE]',bN:'INDIA',bC:'in',c1:'#0057b8',r:184,w:3,b:104,lb:'6',fN:'AUSTRALIA',fC:'au',c2:'#eab308',fS:'BOWLING',t:'AUS OPT TO BOWL'},
+  {id:'ind-pak',lbl:'INDIA vs PAKISTAN - CUP [SCHEDULED]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,lb:'VS',fN:'PAKISTAN',fC:'pk',c2:'#046a38',fS:'SCHEDULED',t:'MATCH STARTS AT 7:30 PM IST'},
+  {id:'csk-mi',lbl:'CHENNAI (CSK) vs MUMBAI (MI) - IPL [LIVE]',bN:'CHENNAI',bC:'CSK',c1:'#eab308',r:142,w:4,b:90,lb:'4',fN:'MUMBAI',fC:'MI',c2:'#1d4ed8',fS:'BOWLING',t:'MUMBAI OPT TO BOWL'},
+  {id:'rcb-kkr',lbl:'BENGALURU (RCB) vs KOLKATA (KKR) - IPL [SCHEDULED]',bN:'BENGALURU',bC:'RCB',c1:'#dc2626',r:0,w:0,b:0,lb:'VS',fN:'KOLKATA',fC:'KKR',c2:'#581c87',fS:'SCHEDULED',t:'TOSS AT 7:00 PM IST'},
+  {id:'srh-rr',lbl:'HYDERABAD (SRH) vs RAJASTHAN (RR) - IPL [SCHEDULED]',bN:'HYDERABAD',bC:'SRH',c1:'#ea580c',r:0,w:0,b:0,lb:'VS',fN:'RAJASTHAN',fC:'RR',c2:'#db2777',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
+  {id:'gt-lsg',lbl:'GUJARAT (GT) vs LUCKNOW (LSG) - IPL [SCHEDULED]',bN:'GUJARAT',bC:'GT',c1:'#1e293b',r:0,w:0,b:0,lb:'VS',fN:'LUCKNOW',fC:'LSG',c2:'#0284c7',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
+  {id:'dc-pbks',lbl:'DELHI (DC) vs PUNJAB (PBKS) - IPL [SCHEDULED]',bN:'DELHI',bC:'DC',c1:'#2563eb',r:0,w:0,b:0,lb:'VS',fN:'PUNJAB',fC:'PBKS',c2:'#dc2626',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
+  {id:'eng-sa',lbl:'ENGLAND vs SOUTH AFRICA - ODI [LIVE]',bN:'ENGLAND',bC:'gb-eng',c1:'#1e40af',r:215,w:6,b:210,lb:'1',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',fS:'BOWLING',t:'ENG OPT TO BAT'},
+  {id:'nz-ban',lbl:'NEW ZEALAND vs BANGLADESH [SCHEDULED]',bN:'NEW ZEALAND',bC:'nz',c1:'#1f2937',r:0,w:0,b:0,lb:'VS',fN:'BANGLADESH',fC:'bd',c2:'#065f46',fS:'SCHEDULED',t:'SCHEDULED MATCH'},
+  {id:'wi-afg',lbl:'WEST INDIES vs AFGHANISTAN [SCHEDULED]',bN:'WEST INDIES',bC:'wi',c1:'#7f1d1d',r:0,w:0,b:0,lb:'VS',fN:'AFGHANISTAN',fC:'af',c2:'#1d4ed8',fS:'SCHEDULED',t:'SCHEDULED MATCH'}
 ];
 
-let allTeams=[...BUILTIN_TEAMS];
-let st={...BUILTIN_TEAMS[0],bg:'bg-transparent',ai:false};
+let st={...BUILTIN_TEAMS[0],bg:'bg-transparent',ai:false,ts:0};
 let hist=[];
-const TOPIC='cricket/live/kinggopan_2026';
+const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
+const TOPIC='cricket/live/kinggopan_v3_stream';
 let client=null;
+const qp=new URLSearchParams(location.search);
+const isUrlLocked=qp.has('bat')||qp.has('bowl');
 
-function buildDropdown(){
-  const sel=document.getElementById('matchSel');
-  sel.innerHTML='';
-  allTeams.forEach(m=>{
-    let o=document.createElement('option');
-    o.value=m.id;o.textContent=m.lbl;
-    if(m.id===st.id)o.selected=true;
-    sel.appendChild(o);
-  });
-}
+const sel=document.getElementById('matchSel');
+BUILTIN_TEAMS.forEach(m=>{
+  let o=document.createElement('option');
+  o.value=m.id;o.textContent=m.lbl;
+  sel.appendChild(o);
+});
 
-document.getElementById('matchSel').onchange=e=>{
-  let f=allTeams.find(x=>x.id===e.target.value);
+sel.onchange=e=>{
+  let f=BUILTIN_TEAMS.find(x=>x.id===e.target.value);
   if(f){
     hist.push({...st});
-    st={...st,...f};
-    document.getElementById('custBat').value='';
-    document.getElementById('custBowl').value='';
+    st={...st,...f,ts:Date.now()};
+    document.getElementById('custBat').value=f.bN;
+    document.getElementById('custBowl').value=f.fN;
+    document.getElementById('col1').value=f.c1;
+    document.getElementById('col2').value=f.c2;
     render();sync();
   }
 };
@@ -235,67 +241,58 @@ document.getElementById('matchSel').onchange=e=>{
 function liveTypeTeams(){
   let b=document.getElementById('custBat').value.trim().toUpperCase();
   let f=document.getElementById('custBowl').value.trim().toUpperCase();
-  if(b){st.bN=b;st.bC=b.slice(0,3);st.bBg='linear-gradient(135deg,#1d4ed8,#1e3a8a)';}
-  if(f){st.fN=f;st.fC=f.slice(0,3);st.fBg='linear-gradient(135deg,#047857,#064e3b)';}
+  let c1=document.getElementById('col1').value;
+  let c2=document.getElementById('col2').value;
+  if(b){st.bN=b;st.bC=b.slice(0,3);}
+  if(f){st.fN=f;st.fC=f.slice(0,3);}
+  st.c1=c1;st.c2=c2;st.ts=Date.now();
   st.t=`${st.bN} VS ${st.fN} - LIVE`;
   render();sync();
 }
 
 function resetScoreZero(){
   hist.push({...st});
-  st.r=0;st.w=0;st.b=0;st.lb='0';st.fS='BOWLING';
+  st.r=0;st.w=0;st.b=0;st.lb='0';st.fS='BOWLING';st.ts=Date.now();
   render();sync();
 }
 
 function liveTypeTicker(){
   let v=document.getElementById('tickerInp').value.trim();
-  if(v){st.t=v.toUpperCase();render();sync();}
+  if(v){st.t=v.toUpperCase();st.ts=Date.now();render();sync();}
 }
 
-async function fetchESPN(){
-  document.getElementById('espnNote').textContent='Checking ESPN Live Matches...';
-  try{
-    let r=await fetch('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel?_t='+Date.now());
-    let d=await r.json();
-    let list=[];
-    (d.scores||[]).forEach(lg=>(lg.events||[]).forEach(ev=>{
-      let state=ev.status?.type?.state;
-      let tag=state==='in'?'LIVE':state==='post'?'RESULT':'SCHEDULED';
-      let cs=ev.competitions?.[0]?.competitors||[];
-      if(cs.length>=2){
-        let n1=(cs[0].team?.shortDisplayName||'TEAM 1').toUpperCase();
-        let n2=(cs[1].team?.shortDisplayName||'TEAM 2').toUpperCase();
-        let sc=String(cs[0].score||'0/0').split('/');
-        list.push({
-          id:'espn-'+ev.id,lbl:`${n1} vs ${n2} [${tag}]`,
-          bN:n1,bC:(cs[0].team?.abbreviation||n1.slice(0,3)).toUpperCase(),bBg:'linear-gradient(135deg,#1d4ed8,#1e3a8a)',
-          r:parseInt(sc[0])||0,w:parseInt(sc[1])||0,b:tag==='LIVE'?60:0,lb:tag==='LIVE'?'•':'VS',
-          fN:n2,fC:(cs[1].team?.abbreviation||n2.slice(0,3)).toUpperCase(),fBg:'linear-gradient(135deg,#047857,#064e3b)',
-          fS:tag==='LIVE'?'BOWLING':tag,t:(ev.status?.type?.detail||tag).toUpperCase()
-        });
-      }
-    }));
-    if(list.length){
-      allTeams=[...list,...BUILTIN_TEAMS];
-      buildDropdown();
-      document.getElementById('espnNote').textContent=`Loaded ${list.length} ESPN Matches + All Teams!`;
-    }else{
-      document.getElementById('espnNote').textContent='All IPL & International Teams Loaded';
-    }
-  }catch(e){
-    document.getElementById('espnNote').textContent='All IPL & International Teams Ready';
-  }
+function updatePrismUrlBox(){
+  let base=location.origin+location.pathname;
+  let p=new URLSearchParams();
+  p.set('bat',st.bN);
+  p.set('bowl',st.fN);
+  p.set('c1',st.c1.replace('#',''));
+  p.set('c2',st.c2.replace('#',''));
+  if(st.r>0||st.w>0){p.set('r',st.r);p.set('w',st.w);p.set('b',st.b);}
+  let full=`${base}?${p.toString()}`;
+  document.getElementById('prismUrlBox').textContent=full;
+  return full;
+}
+
+function copyPrismUrl(){
+  let u=updatePrismUrlBox();
+  if(navigator.clipboard)navigator.clipboard.writeText(u);
+  alert('Copied! Paste this link into PRISM Live Edit URL:\n\n'+u);
+}
+
+function makeGrad(hex){
+  return `linear-gradient(135deg, ${hex} 0%, #090d16 140%)`;
 }
 
 function render(){
   document.getElementById('batName').textContent=st.bN;
-  document.getElementById('wL').style.background=st.bBg;
+  document.getElementById('wL').style.background=makeGrad(st.c1||'#d4a000');
   document.getElementById('batScore').textContent=`${st.r}-${st.w}`;
   document.getElementById('batOv').textContent=Math.floor(st.b/6)+'.'+(st.b%6);
   let lb=document.getElementById('lastBall');
   lb.textContent=st.lb;lb.className='ball'+(st.lb==='4'?' c4':st.lb==='6'?' c6':st.lb==='W'?' cW':'');
   document.getElementById('bowlName').textContent=st.fN;
-  document.getElementById('wR').style.background=st.fBg;
+  document.getElementById('wR').style.background=makeGrad(st.c2||'#046a38');
   document.getElementById('bowlStat').textContent=st.fS;
   document.getElementById('botTxt').textContent=st.t;
   document.getElementById('crrTxt').textContent=st.b>0?((st.r/st.b)*6).toFixed(2):'0.00';
@@ -303,6 +300,7 @@ function render(){
   if(!document.body.classList.contains('ctrl'))document.body.className=st.bg;
   document.getElementById('aiChk').checked=st.ai;
   document.getElementById('dotAI').className='dot-r'+(st.ai?' on':'');
+  updatePrismUrlBox();
 }
 
 function setFlag(id,c,n){
@@ -313,8 +311,11 @@ function setFlag(id,c,n){
 }
 
 function sync(){
-  localStorage.setItem('ck_st',JSON.stringify(st));
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'ST',d:st}),{retain:true});
+  st.ts=Date.now();
+  localStorage.setItem('ck_st_v3',JSON.stringify(st));
+  if(client&&client.connected){
+    client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:false});
+  }
 }
 
 function addBall(v){hist.push({...st});st.lb=v;if(v==='W'){if(st.w<10)st.w++;st.b++;}else{st.r+=parseInt(v);st.b++;}render();sync();}
@@ -323,7 +324,7 @@ function undoBall(){if(hist.length){st=hist.pop();render();sync();}}
 function setBg(b){st.bg=b;render();sync();}
 function swapTeams(){
   hist.push({...st});
-  [st.bN,st.fN]=[st.fN,st.bN];[st.bC,st.fC]=[st.fC,st.bC];[st.bBg,st.fBg]=[st.fBg,st.bBg];
+  [st.bN,st.fN]=[st.fN,st.bN];[st.bC,st.fC]=[st.fC,st.bC];[st.c1,st.c2]=[st.c2,st.c1];
   st.r=0;st.w=0;st.b=0;st.lb='0';st.fS='BOWLING';st.t=`${st.bN} CHASING`;render();sync();
 }
 
@@ -355,11 +356,11 @@ function toggleAI(on){
 }
 function nextDemo(){
   let x=DEMOS[dIdx++%DEMOS.length];speak(x.a,x.m);
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',a:x.a,m:x.m}));
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Scoreboard and remote control are connected!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',a:'Gopakumar',m:'Scoreboard and remote control are connected!'}));
+  speak('Gopakumar','Scoreboard team and theme are locked and working!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Scoreboard team and theme are locked and working!'}));
 }
 
 // YouTube Chat
@@ -380,16 +381,23 @@ async function connectYT(){
       if(!ytChat||!st.ai)return;
       let u=`https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytChat}&part=snippet,authorDetails&key=${k}`+(ytTok?`&pageToken=${ytTok}`:'');
       let res=await fetch(u);let dat=await res.json();if(dat.nextPageToken)ytTok=dat.nextPageToken;
-      (dat.items||[]).forEach(i=>{if(!seen.has(i.id)){seen.add(i.id);let a=i.authorDetails?.displayName||'Viewer',tx=i.snippet?.displayMessage||'';if(tx){speak(a,tx);if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',a,m:tx}));}}});
+      (dat.items||[]).forEach(i=>{if(!seen.has(i.id)){seen.add(i.id);let a=i.authorDetails?.displayName||'Viewer',tx=i.snippet?.displayMessage||'';if(tx){speak(a,tx);if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));}}});
     },6000);
   }catch(e){document.getElementById('ytNote').textContent='Connection Error';}
 }
 
-buildDropdown();
-if(new URLSearchParams(location.search).get('control')==='1')openPanel();
-try{let s=JSON.parse(localStorage.getItem('ck_st'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v3'));if(s)st={...st,...s};}catch(e){}
+
+if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=st.bN.slice(0,3);}
+if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=st.fN.slice(0,3);}
+if(qp.get('c1'))st.c1='#'+qp.get('c1').replace('#','');
+if(qp.get('c2'))st.c2='#'+qp.get('c2').replace('#','');
+if(qp.get('r'))st.r=parseInt(qp.get('r'))||0;
+if(qp.get('w'))st.w=parseInt(qp.get('w'))||0;
+if(qp.get('b'))st.b=parseInt(qp.get('b'))||0;
+if(qp.get('control')==='1')openPanel();
+
 render();
-fetchESPN();
 
 if(typeof mqtt!=='undefined'){
   client=mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
@@ -397,13 +405,20 @@ if(typeof mqtt!=='undefined'){
     document.getElementById('dotSync').classList.add('on');
     let b=document.getElementById('syncBadge');b.textContent='● Live Connected';b.classList.add('ok');
     client.subscribe(TOPIC);
-    if(new URLSearchParams(location.search).get('control')==='1')sync();
   });
   client.on('message',(t,msg)=>{
     try{
       let p=JSON.parse(msg.toString());
-      if(p.k==='ST'){st={...st,...p.d};render();}
-      else if(p.k==='SP'){speak(p.a,p.m);}
+      if(p.sid===SENDER_ID)return; // Ignore own echo so it never overwrites!
+      if(p.k==='ST'&&p.d&&p.d.ts>st.ts){
+        if(isUrlLocked){
+          // Keep URL-locked teams & colors, only sync score & ball updates
+          st.r=p.d.r;st.w=p.d.w;st.b=p.d.b;st.lb=p.d.lb;st.t=p.d.t;st.ts=p.d.ts;
+        }else{
+          st={...st,...p.d};
+        }
+        render();
+      }else if(p.k==='SP'){speak(p.a,p.m);}
     }catch(e){}
   });
 }
