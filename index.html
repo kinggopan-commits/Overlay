@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Runs, Wickets & Live Overs</title>
+<title>Live Cricket Broadcast Overlay - Dynamic Overs & Center Events</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -16,7 +16,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 
 .overlay{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:98%;max-width:1120px;z-index:100;filter:drop-shadow(0 6px 14px rgba(0,0,0,.85))}
 .top-bar{height:4px;background:linear-gradient(90deg,#b30000,#ff1e1e,#b30000);border-radius:6px 6px 0 0}
-.main{display:flex;height:78px;background:#0d1117;border-left:3px solid #d40000;border-right:3px solid #d40000}
+.main{display:flex;height:80px;background:#0d1117;border-left:3px solid #d40000;border-right:3px solid #d40000}
 
 .wing-l{flex:1;display:flex;align-items:center;justify-content:space-between;padding:4px 10px 4px 14px;background:linear-gradient(135deg,#d4a000,#090d16 145%);border-radius:0 38px 38px 0;z-index:2;box-shadow:4px 0 10px rgba(0,0,0,.6);min-width:0}
 .wing-r{flex:1;display:flex;align-items:center;justify-content:space-between;padding:4px 14px 4px 10px;background:linear-gradient(135deg,#046a38,#090d16 145%);border-radius:38px 0 0 38px;z-index:2;box-shadow:-4px 0 10px rgba(0,0,0,.6);min-width:0}
@@ -26,16 +26,27 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 
 .pill{background:rgba(0,0,0,.5);color:#fff;font-size:10px;font-weight:800;padding:2px 9px;border-radius:10px;margin-bottom:2px;width:fit-content;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
 .score{color:#fff;font-size:25px;font-weight:900;line-height:1.05;text-shadow:2px 2px 4px rgba(0,0,0,.85);white-space:nowrap}
-.overs-badge{background:rgba(0,0,0,.55);color:#facc15;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-top:2px;width:fit-content;letter-spacing:.5px;border:1px solid rgba(250,204,21,.35);white-space:nowrap}
-.bowl-lbl{color:#fff;font-size:20px;font-weight:900;text-shadow:2px 2px 4px rgba(0,0,0,.85);text-transform:uppercase}
+.overs-badge{background:rgba(0,0,0,.6);color:#facc15;font-size:11px;font-weight:900;padding:1.5px 8px;border-radius:6px;margin-top:2px;width:fit-content;letter-spacing:.5px;border:1px solid rgba(250,204,21,.4);white-space:nowrap}
+.overs-badge.rem{color:#38bdf8;border-color:rgba(56,189,248,.4)}
+.bowl-lbl{color:#fff;font-size:20px;font-weight:900;text-shadow:2px 2px 4px rgba(0,0,0,.85);text-transform:uppercase;line-height:1.05}
 
 .flag{width:50px;height:50px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0}
 .flag img{width:100%;height:100%;object-fit:cover}
 
-.center-box{width:92px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0}
-.ball{color:#fff;font-size:30px;font-weight:900;line-height:1}
-.ball.c4{color:#38bdf8}.ball.c6{color:#facc15}.ball.cW{color:#ef4444}
-.over-tag{font-size:8px;font-weight:900;color:#34d399;letter-spacing:.5px;margin-top:3px;text-transform:uppercase}
+/* Center Event Box (0, 1, 2, 3, 4, 6, W) */
+.center-box{width:108px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
+.ball{color:#fff;font-size:32px;font-weight:900;line-height:1;transition:transform .2s ease}
+.ball.c0{color:#9ca3af}
+.ball.c4{color:#38bdf8;text-shadow:0 0 14px rgba(56,189,248,.85);font-size:35px}
+.ball.c6{color:#facc15;text-shadow:0 0 16px rgba(250,204,21,.9);font-size:36px}
+.ball.cW{color:#ef4444;text-shadow:0 0 16px rgba(239,68,68,.9);font-size:35px}
+.event-sub{font-size:9px;font-weight:900;color:#fff;letter-spacing:.6px;margin-top:3px;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.1)}
+.event-sub.c4{background:#0284c7;color:#fff}
+.event-sub.c6{background:#ca8a04;color:#000}
+.event-sub.cW{background:#dc2626;color:#fff}
+.ball-pop{animation:popAnim .35s ease}
+@keyframes popAnim{0%{transform:scale(.5)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+
 .dot-l,.dot-r{position:absolute;top:5px;width:7px;height:7px;border-radius:50%;background:#ef4444}
 .dot-l{left:7px}.dot-r{right:7px}
 .dot-l.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
@@ -46,7 +57,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .crr{background:#111827;border-left:2px solid #f59e0b;padding:0 10px;display:flex;align-items:center;color:#fff;font-size:11px;font-weight:900;white-space:nowrap}
 .crr span{color:#facc15;margin-left:4px}
 
-.toast{position:fixed;bottom:124px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast{position:fixed;bottom:126px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Control Panel */
 .panel{display:none;max-width:540px;margin:10px auto;background:rgba(17,24,39,.97);color:#fff;border:1px solid #374151;border-radius:12px;padding:14px;font-family:sans-serif;box-shadow:0 10px 25px rgba(0,0,0,.85)}
@@ -69,8 +80,8 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 .url-out{background:#0f172a;border:1px dashed #38bdf8;padding:8px;border-radius:8px;font-size:11px;color:#e2e8f0;word-break:break-all;margin-top:6px;user-select:text}
 
 @media(max-width:600px){
-  .main{height:68px}.score{font-size:19px}.overs-badge{font-size:9.5px;padding:1px 6px}.bowl-lbl{font-size:15px}
-  .flag{width:38px;height:38px;font-size:11px}.center-box{width:64px}.ball{font-size:22px}.pill{font-size:9px;padding:1px 7px}
+  .main{height:70px}.score{font-size:19px}.overs-badge{font-size:9px;padding:1px 5px}.bowl-lbl{font-size:15px}
+  .flag{width:38px;height:38px;font-size:11px}.center-box{width:76px}.ball{font-size:22px}.pill{font-size:9px;padding:1px 7px}
 }
 </style>
 </head>
@@ -78,19 +89,24 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Runs, Wickets & Live Overs)</h3>
+    <h3>🎛️ Live Cricket Controller (Overs + / - & Center Highlights)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
-  <!-- 1. Select Live ESPN Match / Teams -->
+  <!-- 1. Select Match & Total Match Overs -->
   <div class="grp">
-    <label>1. Select Match / Teams (Auto-Refreshes Every 10s)</label>
+    <label>1. Select Match / Format Total Overs (Auto-Minus on Bowling Side)</label>
     <div class="row">
-      <select id="matchSel"></select>
-      <button class="btn btn-a" onclick="fetchESPN(false)" title="Force Refresh Now">🔄</button>
-      <button class="btn btn-d" onclick="swapTeams()" title="End 1st Innings & Swap Teams">⇄ 2nd Inn</button>
+      <select id="matchSel" style="flex:2"></select>
+      <select id="totalOvSel" style="flex:1" onchange="changeTotalOvers(this.value)" title="Total Match Overs">
+        <option value="20" selected>20 Overs (T20)</option>
+        <option value="50">50 Overs (ODI)</option>
+        <option value="10">10 Overs (T10)</option>
+        <option value="5">5 Overs</option>
+      </select>
+      <button class="btn btn-d" onclick="swapTeams()" title="Swap 2nd Innings">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Auto-Sync ON: Checking Live Scores & Overs every 10s...</div>
+    <div class="note" id="espnNote">Auto-Sync ON: Left Overs (+), Right Remaining Overs (-)</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
@@ -104,39 +120,34 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
   </div>
 
-  <!-- 3. Batting Team Score & Overs -->
+  <!-- 3. Ball Control Pad (Triggers Center Highlight + Left Over (+) & Right Over (-)) -->
   <div class="grp">
-    <label>3. Batting Team (Left Side): Runs | Wickets | Overs (e.g. 15.3)</label>
-    <div class="row" style="margin-bottom:6px">
-      <input type="number" id="inpRuns" placeholder="Runs" oninput="manualBatEdit()">
-      <input type="number" id="inpWkts" placeholder="Wkts" max="10" min="0" oninput="manualBatEdit()">
-      <input type="text" id="inpOvers" placeholder="Overs (15.3)" oninput="manualBatEdit()">
-      <button class="btn btn-r" onclick="resetScoreZero()">0-0</button>
-    </div>
+    <label>3. Tap Ball Result (Updates Center Display, Left Over + & Right Over -)</label>
     <div class="pad">
       <button onclick="addBall('0')">0</button>
       <button onclick="addBall('1')">1</button>
       <button onclick="addBall('2')">2</button>
       <button onclick="addBall('3')">3</button>
-      <button onclick="addBall('4')" style="color:#38bdf8">4</button>
-      <button onclick="addBall('6')" style="color:#facc15">6</button>
-      <button onclick="addBall('W')" style="background:#991b1b">W</button>
+      <button onclick="addBall('4')" style="color:#38bdf8;border-color:#38bdf8">4</button>
+      <button onclick="addBall('6')" style="color:#facc15;border-color:#facc15">6</button>
+      <button onclick="addBall('W')" style="background:#991b1b;border-color:#ef4444">W</button>
     </div>
     <div class="row" style="margin-top:6px">
       <button class="btn btn-d" style="flex:1" onclick="addExtra('WD')">+1 WD</button>
       <button class="btn btn-d" style="flex:1" onclick="addExtra('NB')">+1 NB</button>
-      <button class="btn btn-a" onclick="completeOverManual()">+1 Over</button>
+      <button class="btn btn-r" onclick="resetScoreZero()">0-0</button>
       <button class="btn btn-r" onclick="undoBall()">↩ Undo</button>
     </div>
   </div>
 
-  <!-- 4. Opponent / Bowling Team 1st Innings Score & Overs -->
+  <!-- 4. Manual Score & Opponent 1st Innings -->
   <div class="grp">
-    <label>4. Bowling Team (Right Side - If Batted 1st): Score & Overs</label>
+    <label>4. Manual Edit: Runs | Wkts | Overs | Opponent 1st Inn Score</label>
     <div class="row">
-      <input type="text" id="inpOppScore" placeholder="Score (e.g. 185-7)" oninput="manualOppEdit()">
-      <input type="text" id="inpOppOvers" placeholder="Overs (e.g. 20.0)" oninput="manualOppEdit()">
-      <button class="btn btn-d" onclick="clearOppScore()">BOWLING</button>
+      <input type="number" id="inpRuns" placeholder="Runs" oninput="manualBatEdit()">
+      <input type="number" id="inpWkts" placeholder="Wkts" max="10" min="0" oninput="manualBatEdit()">
+      <input type="text" id="inpOvers" placeholder="Ov (e.g. 4.2)" oninput="manualBatEdit()">
+      <input type="text" id="inpOppScore" placeholder="Opp (185-7)" oninput="manualOppEdit()">
     </div>
   </div>
 
@@ -191,52 +202,51 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 <div class="overlay">
   <div class="top-bar"></div>
   <div class="main">
-    <!-- Left Wing: Batting Team Score & Overs -->
+    <!-- Left Wing: Batting Team (Overs Increase +) -->
     <div class="wing-l" id="wL">
       <div class="team-col">
         <div class="pill" id="batName">SRI LANKA</div>
         <div class="score" id="batScore">66-5</div>
-        <div class="overs-badge" id="batOv">OVERS: 22.2</div>
+        <div class="overs-badge" id="batOv">OVERS: 12.2 / 20</div>
       </div>
       <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/lk.png"></div>
     </div>
 
-    <!-- Center Ball Box -->
+    <!-- Center Box: Highlights 0 (DOT), 1, 2, 3, 4 (FOUR), 6 (SIX), W (WICKET) -->
     <div class="center-box" onclick="openPanel()">
       <div class="dot-l" id="dotSync" title="Green = Live Sync"></div>
       <div class="dot-r" id="dotAI" title="Blue = AI Voice"></div>
       <div class="ball" id="lastBall">2</div>
-      <div class="over-tag" id="overStatusTag">BALL 2/6</div>
+      <div class="event-sub" id="eventSubTag">2 RUNS</div>
     </div>
 
-    <!-- Right Wing: Bowling Team Score & Overs -->
+    <!-- Right Wing: Bowling Team (Total Overs Minus -) -->
     <div class="wing-r" id="wR">
       <div class="flag" id="bowlFlag"><img src="https://flagcdn.com/w160/pk.png"></div>
       <div class="team-col right">
         <div class="pill" id="bowlName">PAKISTAN</div>
-        <div id="rightDisplayArea" style="display:flex;flex-direction:column;align-items:flex-end">
-          <div class="bowl-lbl" id="bowlStat">BOWLING</div>
-        </div>
+        <div class="bowl-lbl" id="rightMainText">BOWLING</div>
+        <div class="overs-badge rem" id="bowlRemOv">REM: 7.4 OV</div>
       </div>
     </div>
   </div>
   <div class="bot-bar">
     <div class="status" id="botTxt">PAK OPT TO BOWL</div>
-    <div class="crr">CRR:<span id="crrTxt">2.96</span></div>
+    <div class="crr">CRR:<span id="crrTxt">5.35</span></div>
   </div>
 </div>
 
 <script>
 const BUILTIN_TEAMS=[
-  {id:'auto-espn',lbl:'🔄 AUTO-SELECT FIRST LIVE ESPN MATCH [AUTO]',bN:'LOADING',bC:'IN',c1:'#0057b8',r:0,w:0,b:0,lb:'LIVE',fN:'LIVE',fC:'AU',c2:'#046a38',oppSc:'',oppOv:'',fS:'BOWLING',t:'SYNCING LIVE SCOREBOARD...'},
-  {id:'sl-pak',lbl:'SRI LANKA vs PAKISTAN - ODI [1st INN]',bN:'SRI LANKA',bC:'lk',c1:'#d4a000',r:66,w:5,b:134,lb:'2',fN:'PAKISTAN',fC:'pk',c2:'#046a38',oppSc:'',oppOv:'',fS:'BOWLING',t:'PAK OPT TO BOWL'},
-  {id:'ind-aus-chase',lbl:'INDIA vs AUSTRALIA - T20I [2nd INN CHASE]',bN:'INDIA',bC:'in',c1:'#0057b8',r:148,w:3,b:92,lb:'6',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'185-7',oppOv:'20.0',fS:'185-7',t:'INDIA NEED 38 RUNS IN 28 BALLS'},
-  {id:'csk-mi-chase',lbl:'CHENNAI (CSK) vs MUMBAI (MI) - IPL [2nd INN]',bN:'CHENNAI',bC:'CSK',c1:'#eab308',r:156,w:4,b:98,lb:'4',fN:'MUMBAI',fC:'MI',c2:'#1d4ed8',oppSc:'192-6',oppOv:'20.0',fS:'192-6',t:'CSK NEED 37 RUNS IN 22 BALLS'},
-  {id:'rcb-kkr',lbl:'BENGALURU (RCB) vs KOLKATA (KKR) - IPL',bN:'BENGALURU',bC:'RCB',c1:'#dc2626',r:0,w:0,b:0,lb:'VS',fN:'KOLKATA',fC:'KKR',c2:'#581c87',oppSc:'',oppOv:'',fS:'SCHEDULED',t:'TOSS AT 7:00 PM IST'},
-  {id:'srh-rr',lbl:'HYDERABAD (SRH) vs RAJASTHAN (RR) - IPL',bN:'HYDERABAD',bC:'SRH',c1:'#ea580c',r:0,w:0,b:0,lb:'VS',fN:'RAJASTHAN',fC:'RR',c2:'#db2777',oppSc:'',oppOv:'',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
-  {id:'gt-lsg',lbl:'GUJARAT (GT) vs LUCKNOW (LSG) - IPL',bN:'GUJARAT',bC:'GT',c1:'#1e293b',r:0,w:0,b:0,lb:'VS',fN:'LUCKNOW',fC:'LSG',c2:'#0284c7',oppSc:'',oppOv:'',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
-  {id:'dc-pbks',lbl:'DELHI (DC) vs PUNJAB (PBKS) - IPL',bN:'DELHI',bC:'DC',c1:'#2563eb',r:0,w:0,b:0,lb:'VS',fN:'PUNJAB',fC:'PBKS',c2:'#dc2626',oppSc:'',oppOv:'',fS:'SCHEDULED',t:'IPL SCHEDULED MATCH'},
-  {id:'eng-sa',lbl:'ENGLAND vs SOUTH AFRICA - ODI',bN:'ENGLAND',bC:'gb-eng',c1:'#1e40af',r:215,w:6,b:210,lb:'1',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',oppSc:'',oppOv:'',fS:'BOWLING',t:'ENG OPT TO BAT'}
+  {id:'auto-espn',lbl:'🔄 AUTO-SELECT LIVE ESPN MATCH [AUTO]',bN:'LOADING',bC:'IN',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'LIVE',fC:'AU',c2:'#046a38',oppSc:'',t:'SYNCING LIVE SCOREBOARD...'},
+  {id:'sl-pak',lbl:'SRI LANKA vs PAKISTAN - T20 [20 OV]',bN:'SRI LANKA',bC:'lk',c1:'#d4a000',r:66,w:5,b:74,totOv:20,lb:'2',fN:'PAKISTAN',fC:'pk',c2:'#046a38',oppSc:'',t:'PAK OPT TO BOWL'},
+  {id:'ind-aus-chase',lbl:'INDIA vs AUSTRALIA - T20I [CHASE]',bN:'INDIA',bC:'in',c1:'#0057b8',r:148,w:3,b:92,totOv:20,lb:'6',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'185-7',t:'INDIA NEED 38 RUNS IN 28 BALLS'},
+  {id:'csk-mi-chase',lbl:'CHENNAI (CSK) vs MUMBAI (MI) - IPL',bN:'CHENNAI',bC:'CSK',c1:'#eab308',r:156,w:4,b:98,totOv:20,lb:'4',fN:'MUMBAI',fC:'MI',c2:'#1d4ed8',oppSc:'192-6',t:'CSK NEED 37 RUNS IN 22 BALLS'},
+  {id:'rcb-kkr',lbl:'BENGALURU (RCB) vs KOLKATA (KKR) - IPL',bN:'BENGALURU',bC:'RCB',c1:'#dc2626',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KOLKATA',fC:'KKR',c2:'#581c87',oppSc:'',t:'TOSS AT 7:00 PM IST'},
+  {id:'srh-rr',lbl:'HYDERABAD (SRH) vs RAJASTHAN (RR) - IPL',bN:'HYDERABAD',bC:'SRH',c1:'#ea580c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'RAJASTHAN',fC:'RR',c2:'#db2777',oppSc:'',t:'IPL SCHEDULED MATCH'},
+  {id:'gt-lsg',lbl:'GUJARAT (GT) vs LUCKNOW (LSG) - IPL',bN:'GUJARAT',bC:'GT',c1:'#1e293b',r:0,w:0,b:0,totOv:20,lb:'0',fN:'LUCKNOW',fC:'LSG',c2:'#0284c7',oppSc:'',t:'IPL SCHEDULED MATCH'},
+  {id:'dc-pbks',lbl:'DELHI (DC) vs PUNJAB (PBKS) - IPL',bN:'DELHI',bC:'DC',c1:'#2563eb',r:0,w:0,b:0,totOv:20,lb:'0',fN:'PUNJAB',fC:'PBKS',c2:'#dc2626',oppSc:'',t:'IPL SCHEDULED MATCH'},
+  {id:'eng-sa-odi',lbl:'ENGLAND vs SOUTH AFRICA - ODI [50 OV]',bN:'ENGLAND',bC:'gb-eng',c1:'#1e40af',r:215,w:6,b:210,totOv:50,lb:'1',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',oppSc:'',t:'ENG OPT TO BAT'}
 ];
 
 let allTeams=[...BUILTIN_TEAMS];
@@ -245,7 +255,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[1],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v8_overs';
+const TOPIC='cricket/live/kinggopan_v9_removers';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -291,9 +301,16 @@ document.getElementById('matchSel').onchange=e=>{
     document.getElementById('custBowl').value=f.fN;
     document.getElementById('col1').value=f.c1;
     document.getElementById('col2').value=f.c2;
+    document.getElementById('totalOvSel').value=String(f.totOv||20);
     render();sync();
   }
 };
+
+function changeTotalOvers(val){
+  st.totOv=parseInt(val)||20;
+  st.manualLock=true;
+  render();sync();
+}
 
 function liveTypeTeams(){
   let b=document.getElementById('custBat').value.trim().toUpperCase();
@@ -320,28 +337,13 @@ function manualBatEdit(){
 
 function manualOppEdit(){
   st.oppSc=document.getElementById('inpOppScore').value.trim().toUpperCase();
-  st.oppOv=document.getElementById('inpOppOvers').value.trim();
   st.manualLock=true;st.ts=Date.now();
-  render();sync();
-}
-
-function clearOppScore(){
-  st.oppSc='';st.oppOv='';st.fS='BOWLING';st.manualLock=true;st.ts=Date.now();
   render();sync();
 }
 
 function resetScoreZero(){
   hist.push({...st});
   st.r=0;st.w=0;st.b=0;st.lb='0';st.manualLock=true;st.ts=Date.now();
-  render();sync();
-}
-
-function completeOverManual(){
-  hist.push({...st});
-  let currentOvers=Math.floor(st.b/6);
-  st.b=(currentOvers+1)*6;
-  st.lb='•';
-  st.manualLock=true;st.ts=Date.now();
   render();sync();
 }
 
@@ -362,40 +364,27 @@ async function fetchJsonResilient(url){
   return null;
 }
 
-// Fetch from ESPN detailed scoreboard API so Overs & Both Team Scores are extracted accurately
 async function fetchESPN(isAuto=true){
   const noteEl=document.getElementById('espnNote');
-  if(!isAuto)noteEl.textContent='Refreshing Live ESPN Scoreboard & Overs...';
-
   let d=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard');
   let events=(d&&d.events)?d.events:[];
-
   if(!events.length){
     let sp=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel');
-    if(sp&&sp.scores){
-      sp.scores.forEach(lg=>(lg.events||[]).forEach(ev=>events.push(ev)));
-    }
+    if(sp&&sp.scores)sp.scores.forEach(lg=>(lg.events||[]).forEach(ev=>events.push(ev)));
   }
-
-  if(!events.length){
-    noteEl.textContent='Auto-Refresh Active (Every 10s)';
-    return;
-  }
+  if(!events.length)return;
 
   let list=[];
   events.forEach(ev=>{
     let state=ev.status?.type?.state;
     let tag=state==='in'?'LIVE':state==='post'?'RESULT':'SCHEDULED';
-    let comp=ev.competitions?.[0];
-    let cs=comp?.competitors||[];
+    let cs=ev.competitions?.[0]?.competitors||[];
     if(cs.length>=2){
-      // Extract score and overs from competitor objects or linescores
       const parseComp=(c)=>{
         let name=(c.team?.shortDisplayName||c.team?.name||'TEAM').toUpperCase();
         let abbr=(c.team?.abbreviation||name.slice(0,3)).toUpperCase();
         let raw=String(c.score||'').trim();
         let runs=0,wkts=0,ovStr='',hasBatted=false;
-
         if(c.linescores&&c.linescores.length>0){
           let lastInn=c.linescores[c.linescores.length-1];
           if(lastInn.runs!==undefined)runs=parseInt(lastInn.runs)||0;
@@ -411,35 +400,23 @@ async function fetchESPN(isAuto=true){
           let mOv=raw.match(/\(([\d\.]+)\s*ov/i);
           if(mOv)ovStr=mOv[1];
         }
-        return {name,abbr,runs,wkts,ovStr,hasBatted,isWinner:c.winner};
+        return {name,abbr,runs,wkts,ovStr,hasBatted};
       };
-
-      let t0=parseComp(cs[0]);
-      let t1=parseComp(cs[1]);
-
-      // Decide who is currently batting (Left) vs bowling/1st innings (Right)
+      let t0=parseComp(cs[0]),t1=parseComp(cs[1]);
       let bat=t0,bowl=t1;
       if(t1.hasBatted&&!t0.hasBatted){bat=t1;bowl=t0;}
-      else if(t0.hasBatted&&t1.hasBatted){
-        // In 2nd innings, the chasing team usually has fewer completed overs or is second in batting order
-        if(t0.ovStr==='20.0'||t0.ovStr==='50.0'){bat=t1;bowl=t0;}
-      }
+      else if(t0.hasBatted&&t1.hasBatted&&(t0.ovStr==='20.0'||t0.ovStr==='50.0')){bat=t1;bowl=t0;}
 
       let balls1=bat.ovStr?oversToBalls(bat.ovStr):0;
+      let fmtName=(ev.competitions?.[0]?.format?.abbreviation||'T20').toUpperCase();
+      let totOv=fmtName.includes('ODI')?50:fmtName.includes('T10')?10:20;
       let oppSc=bowl.hasBatted?`${bowl.runs}-${bowl.wkts}`:'';
-      let oppOv=bowl.ovStr||'';
 
       list.push({
-        id:'espn-'+ev.id,
-        lbl:`${bat.name} vs ${bowl.name} [${tag}]`,
-        isLive:(tag==='LIVE'),
-        bN:bat.name,bC:bat.abbr,c1:'#1d4ed8',
-        r:bat.runs,w:bat.wkts,b:balls1,
-        lb:tag==='LIVE'?(balls1%6===0&&balls1>0?'OV':'LIVE'):'VS',
-        fN:bowl.name,fC:bowl.abbr,c2:'#047857',
-        oppSc:oppSc,oppOv:oppOv,
-        fS:tag==='LIVE'?'BOWLING':tag,
-        t:(ev.status?.type?.shortDetail||ev.status?.type?.detail||tag).toUpperCase()
+        id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag}]`,isLive:(tag==='LIVE'),
+        bN:bat.name,bC:bat.abbr,c1:'#1d4ed8',r:bat.runs,w:bat.wkts,b:balls1,totOv:totOv,
+        lb:tag==='LIVE'?'•':'0',fN:bowl.name,fC:bowl.abbr,c2:'#047857',oppSc:oppSc,
+        t:(ev.status?.type?.shortDetail||tag).toUpperCase()
       });
     }
   });
@@ -447,23 +424,28 @@ async function fetchESPN(isAuto=true){
   if(list.length){
     allTeams=[BUILTIN_TEAMS[0],...list,...BUILTIN_TEAMS.slice(1)];
     buildDropdown();
-
     if(!st.manualLock){
-      let targetMatch=null;
-      if(st.id&&st.id.startsWith('espn-')){
-        targetMatch=list.find(x=>x.id===st.id);
-      }
-      if(!targetMatch){
-        targetMatch=list.find(x=>x.isLive)||list[0];
-      }
-      if(targetMatch){
-        st={...st,...targetMatch,manualLock:false};
-        render();
-        sync();
-      }
+      let targetMatch=st.id?.startsWith('espn-')?list.find(x=>x.id===st.id):null;
+      if(!targetMatch)targetMatch=list.find(x=>x.isLive)||list[0];
+      if(targetMatch){st={...st,...targetMatch,manualLock:false};render();sync();}
     }
     let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    noteEl.textContent=`Auto-Updated at ${now} (${list.length} ESPN matches)`;
+    noteEl.textContent=`Auto-Updated at ${now}`;
+  }
+}
+
+function getEventLabel(val){
+  switch(String(val)){
+    case '0': return {txt:'0',sub:'DOT BALL',cls:'c0'};
+    case '1': return {txt:'1',sub:'1 RUN',cls:''};
+    case '2': return {txt:'2',sub:'2 RUNS',cls:''};
+    case '3': return {txt:'3',sub:'3 RUNS',cls:''};
+    case '4': return {txt:'4',sub:'FOUR!',cls:'c4'};
+    case '6': return {txt:'6',sub:'SIXER!',cls:'c6'};
+    case 'W': return {txt:'W',sub:'WICKET!',cls:'cW'};
+    case 'WD': return {txt:'WD',sub:'WIDE +1',cls:'c4'};
+    case 'NB': return {txt:'NB',sub:'NO BALL +1',cls:'c4'};
+    default: return {txt:String(val),sub:`BALL ${st.b%6}/6`,cls:''};
   }
 }
 
@@ -471,11 +453,10 @@ function updatePrismUrlBox(){
   let base=location.origin+location.pathname;
   let p=new URLSearchParams();
   if(st.manualLock){
-    p.set('bat',st.bN);
-    p.set('bowl',st.fN);
-    p.set('c1',st.c1.replace('#',''));
-    p.set('c2',st.c2.replace('#',''));
-    if(st.oppSc){p.set('oppsc',st.oppSc);if(st.oppOv)p.set('oppov',st.oppOv);}
+    p.set('bat',st.bN);p.set('bowl',st.fN);
+    p.set('c1',st.c1.replace('#',''));p.set('c2',st.c2.replace('#',''));
+    p.set('tot',st.totOv||20);
+    if(st.oppSc)p.set('oppsc',st.oppSc);
   }
   p.set('bg',st.bg.replace('bg-',''));
   let full=`${base}?${p.toString()}`;
@@ -494,47 +475,49 @@ function makeGrad(hex){
 }
 
 function render(){
-  // Batting Team (Left)
+  // 1. Batting Team (Left Side): Overs INCREASE (+)
   document.getElementById('batName').textContent=st.bN;
   document.getElementById('wL').style.background=makeGrad(st.c1||'#d4a000');
   document.getElementById('batScore').textContent=`${st.r}-${st.w}`;
-  let ovFormatted=ballsToOvers(st.b);
-  document.getElementById('batOv').textContent=`OVERS: ${ovFormatted}`;
+  let ovPlayed=ballsToOvers(st.b);
+  let totOv=parseInt(st.totOv)||20;
+  document.getElementById('batOv').textContent=`OVERS: ${ovPlayed} / ${totOv}`;
 
-  // Center Ball & Over Completion Status
-  let lb=document.getElementById('lastBall');
-  lb.textContent=st.lb;lb.className='ball'+(st.lb==='4'?' c4':st.lb==='6'?' c6':st.lb==='W'?' cW':'');
-  const overTag=document.getElementById('overStatusTag');
-  let ballInOver=st.b%6;
-  if(st.b>0&&ballInOver===0){
-    overTag.textContent='OVER COMPLETE';
-    overTag.style.color='#facc15';
-  }else{
-    overTag.textContent=`BALL ${ballInOver}/6`;
-    overTag.style.color='#34d399';
-  }
+  // 2. Center Box: Highlights 0 (DOT), 1, 2, 3, 4 (FOUR), 6 (SIX), W (WICKET)
+  let evInfo=getEventLabel(st.lb);
+  let lbEl=document.getElementById('lastBall');
+  let subEl=document.getElementById('eventSubTag');
+  lbEl.textContent=evInfo.txt;
+  lbEl.className='ball '+(evInfo.cls||'')+' ball-pop';
+  subEl.textContent=evInfo.sub;
+  subEl.className='event-sub '+(evInfo.cls||'');
 
-  // Bowling Team (Right) - Shows Runs & Overs clearly on separate lines so nothing gets cut off
+  // 3. Bowling Team (Right Side): Total Overs MINUS (-)
   document.getElementById('bowlName').textContent=st.fN;
   document.getElementById('wR').style.background=makeGrad(st.c2||'#046a38');
-  const rightArea=document.getElementById('rightDisplayArea');
+  let totalMatchBalls=totOv*6;
+  let remBalls=Math.max(0,totalMatchBalls-st.b);
+  let remOvers=ballsToOvers(remBalls);
+
+  const rightMain=document.getElementById('rightMainText');
   if(st.oppSc&&st.oppSc.trim()!==''){
-    let ovBadge=st.oppOv?`<div class="overs-badge">OVERS: ${st.oppOv}</div>`:`<div class="overs-badge">1ST INNINGS</div>`;
-    rightArea.innerHTML=`<div class="score">${st.oppSc}</div>${ovBadge}`;
+    rightMain.className='score';
+    rightMain.textContent=st.oppSc;
   }else{
-    rightArea.innerHTML=`<div class="bowl-lbl">${st.fS||'BOWLING'}</div><div class="overs-badge">FIELDING</div>`;
+    rightMain.className='bowl-lbl';
+    rightMain.textContent='BOWLING';
   }
+  document.getElementById('bowlRemOv').textContent=`REM: ${remOvers} OV (${remBalls}B)`;
 
   // Bottom Bar & CRR
   document.getElementById('botTxt').textContent=st.t;
   document.getElementById('crrTxt').textContent=st.b>0?((st.r/st.b)*6).toFixed(2):'0.00';
 
-  // Sync Control Panel inputs
+  // Sync Panel Inputs
   if(document.activeElement!==document.getElementById('inpRuns'))document.getElementById('inpRuns').value=st.r;
   if(document.activeElement!==document.getElementById('inpWkts'))document.getElementById('inpWkts').value=st.w;
-  if(document.activeElement!==document.getElementById('inpOvers'))document.getElementById('inpOvers').value=ovFormatted;
+  if(document.activeElement!==document.getElementById('inpOvers'))document.getElementById('inpOvers').value=ovPlayed;
   if(document.activeElement!==document.getElementById('inpOppScore'))document.getElementById('inpOppScore').value=st.oppSc||'';
-  if(document.activeElement!==document.getElementById('inpOppOvers'))document.getElementById('inpOppOvers').value=st.oppOv||'';
 
   setFlag('batFlag',st.bC,st.bN);setFlag('bowlFlag',st.fC,st.fN);
   document.body.className=(st.bg||'bg-transparent')+(panelOpen?' ctrl-open':'');
@@ -552,7 +535,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v8',JSON.stringify(st));
+  localStorage.setItem('ck_st_v9',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -564,8 +547,14 @@ function addBall(v){
   st.manualLock=true;
   if(v==='W'){if(st.w<10)st.w++;st.b++;}
   else{st.r+=parseInt(v);st.b++;}
-  if(st.b%6===0){
-    st.t=`OVER ${Math.floor(st.b/6)} COMPLETE • ${st.bN} ${st.r}-${st.w}`;
+
+  let remBalls=Math.max(0,((parseInt(st.totOv)||20)*6)-st.b);
+  if(st.oppSc&&st.oppSc.includes('-')){
+    let target=parseInt(st.oppSc.split('-')[0])+1;
+    let need=Math.max(0,target-st.r);
+    st.t=need===0?`${st.bN} WON THE MATCH!`:`${st.bN} NEED ${need} RUNS IN ${remBalls} BALLS`;
+  }else if(st.b%6===0){
+    st.t=`OVER ${Math.floor(st.b/6)} COMPLETE • ${remBalls} BALLS REMAINING`;
   }
   render();sync();
 }
@@ -577,16 +566,15 @@ function setBg(b){st.bg=b;render();sync();}
 function swapTeams(){
   hist.push({...st});
   let prevScore=`${st.r}-${st.w}`;
-  let prevOvers=ballsToOvers(st.b);
   [st.bN,st.fN]=[st.fN,st.bN];
   [st.bC,st.fC]=[st.fC,st.bC];
   [st.c1,st.c2]=[st.c2,st.c1];
   st.oppSc=prevScore;
-  st.oppOv=prevOvers;
   st.r=0;st.w=0;st.b=0;st.lb='0';
   st.manualLock=true;
   let target=parseInt(prevScore.split('-')[0])+1;
-  st.t=`${st.bN} NEED ${target} RUNS TO WIN`;
+  let totBalls=(parseInt(st.totOv)||20)*6;
+  st.t=`${st.bN} NEED ${target} RUNS IN ${totBalls} BALLS`;
   render();sync();
 }
 
@@ -594,7 +582,7 @@ function openPanel(){panelOpen=true;document.getElementById('panel').classList.a
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // AI Speech
-const DEMOS=[{a:'Arjun',m:'What a fantastic boundary!'},{a:'Rahul',m:'Great bowling spell right now.'},{a:'Vishnu',m:'Awesome live stream bro!'}];
+const DEMOS=[{a:'Arjun',m:'What a massive sixer!'},{a:'Rahul',m:'Brilliant wicket!'},{a:'Vishnu',m:'Dot ball, building pressure!'}];
 let dIdx=0,q=[],speaking=false;
 function speak(a,m){
   let txt=`${a} says: ${m}`;
@@ -621,8 +609,8 @@ function nextDemo(){
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Runs, wickets and live overs are updating accurately!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Runs, wickets and live overs are updating accurately!'}));
+  speak('Gopakumar','Overs plus, remaining overs minus, and center ball highlights are ready!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Overs plus, remaining overs minus, and center ball highlights are ready!'}));
 }
 
 // YouTube Chat
@@ -649,14 +637,14 @@ async function connectYT(){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v8'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v9'));if(s)st={...st,...s};}catch(e){}
 
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=st.bN.slice(0,3);st.manualLock=true;}
 if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=st.fN.slice(0,3);st.manualLock=true;}
 if(qp.get('c1'))st.c1='#'+qp.get('c1').replace('#','');
 if(qp.get('c2'))st.c2='#'+qp.get('c2').replace('#','');
+if(qp.get('tot'))st.totOv=parseInt(qp.get('tot'))||20;
 if(qp.get('oppsc'))st.oppSc=qp.get('oppsc').toUpperCase();
-if(qp.get('oppov'))st.oppOv=qp.get('oppov');
 if(qp.get('bg'))st.bg='bg-'+qp.get('bg');
 if(isControlMode){panelOpen=true;document.getElementById('panel').classList.add('open');}
 
