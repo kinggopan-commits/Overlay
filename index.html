@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Big Center Runs Display</title>
+<title>Live Cricket Broadcast Overlay - Auto Format Overs</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -92,24 +92,19 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Big Center Runs + Overs)</h3>
+    <h3>🎛️ Live Cricket Controller (Auto Overs & Center Runs)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
-  <!-- 1. Select Match & Total Match Overs -->
+  <!-- 1. Select Match / Teams (Overs Auto-Detected from Match Format) -->
   <div class="grp">
-    <label>1. Select Match / Format Total Overs</label>
+    <label>1. Select Match / Teams (Overs Auto-Set by Format)</label>
     <div class="row">
-      <select id="matchSel" style="flex:2"></select>
-      <select id="totalOvSel" style="flex:1" onchange="changeTotalOvers(this.value)">
-        <option value="20" selected>20 Overs</option>
-        <option value="50">50 Overs</option>
-        <option value="10">10 Overs</option>
-        <option value="5">5 Overs</option>
-      </select>
-      <button class="btn btn-d" onclick="swapTeams()">⇄ Swap</button>
+      <select id="matchSel"></select>
+      <button class="btn btn-a" onclick="fetchESPN(false)" title="Force Refresh Now">🔄</button>
+      <button class="btn btn-d" onclick="swapTeams()" title="Swap 2nd Innings">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Auto-Sync ON: Big Runs in Center, Left Over (+), Right Over (-)</div>
+    <div class="note" id="espnNote">Auto-Sync ON: Format Overs Detected Automatically</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
@@ -123,7 +118,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
   </div>
 
-  <!-- 3. Ball Control Pad (Shows Big Number in Center Box!) -->
+  <!-- 3. Ball Control Pad -->
   <div class="grp">
     <label>3. Tap Ball Result (Shows Big Runs 0, 1, 2, 3, 4, 6, W in Center!)</label>
     <div class="pad">
@@ -258,7 +253,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[1],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v10_centerruns';
+const TOPIC='cricket/live/kinggopan_v11_autoovers';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -304,16 +299,9 @@ document.getElementById('matchSel').onchange=e=>{
     document.getElementById('custBowl').value=f.fN;
     document.getElementById('col1').value=f.c1;
     document.getElementById('col2').value=f.c2;
-    document.getElementById('totalOvSel').value=String(f.totOv||20);
     render();sync();
   }
 };
-
-function changeTotalOvers(val){
-  st.totOv=parseInt(val)||20;
-  st.manualLock=true;
-  render();sync();
-}
 
 function liveTypeTeams(){
   let b=document.getElementById('custBat').value.trim().toUpperCase();
@@ -340,7 +328,11 @@ function manualBatEdit(){
     if(w>st.w)st.lb='W';
     st.w=Math.min(10,Math.max(0,w));
   }
-  if(ov!=='')st.b=oversToBalls(ov);
+  if(ov!==''){
+    st.b=oversToBalls(ov);
+    // Auto-adjust total overs if manual overs exceed 20 (e.g. ODI match)
+    if(st.b>120&&st.totOv<=20)st.totOv=50;
+  }
   st.manualLock=true;st.ts=Date.now();
   render();sync();
 }
@@ -418,11 +410,15 @@ async function fetchESPN(isAuto=true){
       else if(t0.hasBatted&&t1.hasBatted&&(t0.ovStr==='20.0'||t0.ovStr==='50.0')){bat=t1;bowl=t0;}
 
       let balls1=bat.ovStr?oversToBalls(bat.ovStr):0;
-      let fmtName=(ev.competitions?.[0]?.format?.abbreviation||'T20').toUpperCase();
-      let totOv=fmtName.includes('ODI')?50:fmtName.includes('T10')?10:20;
+
+      // Auto-detect total overs from match format (ODI = 50, T10 = 10, T20 = 20)
+      let fmtName=(ev.competitions?.[0]?.format?.abbreviation||ev.competitions?.[0]?.type?.abbreviation||ev.name||'T20').toUpperCase();
+      let totOv=20;
+      if(fmtName.includes('ODI')||fmtName.includes('ONE DAY')||fmtName.includes('50')||balls1>120)totOv=50;
+      else if(fmtName.includes('T10')||fmtName.includes('10 OVER'))totOv=10;
+
       let oppSc=bowl.hasBatted?`${bowl.runs}-${bowl.wkts}`:'';
 
-      // Calculate exact runs/wicket scored on the latest delivery!
       let detectedBall=st.lb||'0';
       if(st.id==='espn-'+ev.id&&st.bN===bat.name){
         if(bat.wickts>st.w)detectedBall='W';
@@ -431,10 +427,10 @@ async function fetchESPN(isAuto=true){
       }
 
       list.push({
-        id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag}]`,isLive:(tag==='LIVE'),
+        id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag} - ${totOv} OV]`,isLive:(tag==='LIVE'),
         bN:bat.name,bC:bat.abbr,c1:'#1d4ed8',r:bat.runs,w:bat.wkts,b:balls1,totOv:totOv,
         lb:detectedBall,fN:bowl.name,fC:bowl.abbr,c2:'#047857',oppSc:oppSc,
-        t:(ev.status?.type?.shortDetail||tag).toUpperCase()
+        t:(ev.status?.type?.shortDetail||ev.status?.type?.detail||tag).toUpperCase()
       });
     }
   });
@@ -448,7 +444,7 @@ async function fetchESPN(isAuto=true){
       if(targetMatch){st={...st,...targetMatch,manualLock:false};render();sync();}
     }
     let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    noteEl.textContent=`Auto-Updated at ${now}`;
+    noteEl.textContent=`Auto-Updated at ${now} (${st.totOv} Overs Format)`;
   }
 }
 
@@ -508,7 +504,7 @@ function render(){
   let subEl=document.getElementById('eventSubTag');
   lbEl.textContent=evInfo.txt;
   lbEl.className='ball '+(evInfo.cls||'');
-  void lbEl.offsetWidth; // Trigger pop animation on every ball!
+  void lbEl.offsetWidth;
   lbEl.classList.add('ball-pop');
   subEl.textContent=evInfo.sub;
   subEl.className='event-sub '+(evInfo.cls||'');
@@ -556,7 +552,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v10',JSON.stringify(st));
+  localStorage.setItem('ck_st_v11',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -630,8 +626,8 @@ function nextDemo(){
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Big center runs display and overs counter are working!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Big center runs display and overs counter are working!'}));
+  speak('Gopakumar','Auto overs detection and center runs display are ready!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Auto overs detection and center runs display are ready!'}));
 }
 
 // YouTube Chat
@@ -658,7 +654,7 @@ async function connectYT(){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v10'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v11'));if(s)st={...st,...s};}catch(e){}
 
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=st.bN.slice(0,3);st.manualLock=true;}
 if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=st.fN.slice(0,3);st.manualLock=true;}
