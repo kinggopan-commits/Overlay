@@ -17,8 +17,8 @@ body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:140px}
 .top-bar{height:4px;background:linear-gradient(90deg,#b30000,#ff1e1e,#b30000);border-radius:6px 6px 0 0}
 .main{display:flex;height:72px;background:#0d1117;border-left:3px solid #d40000;border-right:3px solid #d40000}
 
-.wing-l{flex:1;display:flex;align-items:center;justify-content:space-between;padding:5px 12px 5px 15px;background:linear-gradient(135deg,#d4a000,#9e7400);border-radius:0 36px 36px 0;z-index:2;box-shadow:4px 0 10px rgba(0,0,0,.6)}
-.wing-r{flex:1;display:flex;align-items:center;justify-content:space-between;padding:5px 15px 5px 12px;background:linear-gradient(135deg,#046a38,#024222);border-radius:36px 0 0 36px;z-index:2;box-shadow:-4px 0 10px rgba(0,0,0,.6)}
+.wing-l{flex:1;display:flex;align-items:center;justify-content:space-between;padding:5px 12px 5px 15px;background:linear-gradient(135deg,#d4a000,#090d16 140%);border-radius:0 36px 36px 0;z-index:2;box-shadow:4px 0 10px rgba(0,0,0,.6)}
+.wing-r{flex:1;display:flex;align-items:center;justify-content:space-between;padding:5px 15px 5px 12px;background:linear-gradient(135deg,#046a38,#090d16 140%);border-radius:36px 0 0 36px;z-index:2;box-shadow:-4px 0 10px rgba(0,0,0,.6)}
 
 .pill{background:rgba(0,0,0,.45);color:#fff;font-size:10px;font-weight:800;padding:2px 10px;border-radius:10px;margin-bottom:2px;width:fit-content;text-transform:uppercase}
 .score{color:#fff;font-size:28px;font-weight:900;line-height:1;text-shadow:2px 2px 4px rgba(0,0,0,.8)}
@@ -31,10 +31,10 @@ body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:140px}
 .center-box{width:100px;background:radial-gradient(#1f2937,#05070a);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
 .ball{color:#fff;font-size:34px;font-weight:900}
 .ball.c4{color:#38bdf8}.ball.c6{color:#facc15}.ball.cW{color:#ef4444}
-.dot-l,.dot-r{position:absolute;top:5px;width:7px;height:7px;border-radius:50%;background:#6b7280}
+.dot-l,.dot-r{position:absolute;top:5px;width:8px;height:8px;border-radius:50%;background:#ef4444}
 .dot-l{left:8px}.dot-r{right:8px}
-.dot-l.on{background:#22c55e;box-shadow:0 0 6px #22c55e}
-.dot-r.on{background:#38bdf8;box-shadow:0 0 6px #38bdf8}
+.dot-l.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.dot-r.on{background:#38bdf8;box-shadow:0 0 8px #38bdf8}
 
 .bot-bar{display:flex;height:25px;background:linear-gradient(90deg,#4b2508,#7c3f11,#4b2508);border-top:1.5px solid #f59e0b;border-radius:0 0 6px 6px}
 .status{flex:1;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800;padding:0 8px;white-space:nowrap;overflow:hidden;text-transform:uppercase}
@@ -48,7 +48,7 @@ body.ctrl{background:#0b0f19;overflow-y:auto;padding-bottom:140px}
 .panel.open{display:block}
 .p-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid #1f2937;padding-bottom:8px}
 .p-head h3{font-size:15px;color:#facc15}
-.badge{font-size:11px;padding:3px 8px;border-radius:10px;background:#374151;color:#fbbf24}
+.badge{font-size:11px;padding:3px 8px;border-radius:10px;background:#7f1d1d;color:#fca5a5}
 .badge.ok{background:#065f46;color:#34d399}
 .grp{margin-bottom:10px}
 .grp label{display:block;font-size:11px;color:#9ca3af;margin-bottom:4px;font-weight:600}
@@ -77,19 +77,21 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
-  <!-- 1. Select Preset Team Match -->
+  <!-- 1. All Teams + ESPN Auto-Refresh -->
   <div class="grp">
-    <label>1. Select Match / IPL Teams (Locked Once Selected)</label>
+    <label>1. Select Match / IPL / International Teams (Auto-Refresh: 10s)</label>
     <div class="row">
       <select id="matchSel"></select>
+      <button class="btn btn-a" onclick="fetchESPN()" title="Refresh ESPN">🔄</button>
       <button class="btn btn-d" onclick="swapTeams()">⇄ Swap</button>
     </div>
+    <div class="note" id="espnNote">All 25+ IPL & International Teams Ready</div>
   </div>
 
-  <!-- 2. Custom Team Names + Theme Color Pickers -->
+  <!-- 2. Custom Team Names + Theme Colors -->
   <div class="grp">
-    <label>2. Type Custom Team Names & Colors (Updates Immediately)</label>
-    <div class="row" style="margin-bottom:5px">
+    <label>2. Custom Team Names & Wing Colors</label>
+    <div class="row">
       <input type="text" id="custBat" placeholder="Batting Team" oninput="liveTypeTeams()">
       <input type="color" id="col1" value="#d4a000" onchange="liveTypeTeams()">
       <input type="text" id="custBowl" placeholder="Bowling Team" oninput="liveTypeTeams()">
@@ -112,7 +114,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <div class="row" style="margin-top:6px">
       <button class="btn btn-d" style="flex:1" onclick="addExtra('WD')">+1 WD</button>
       <button class="btn btn-d" style="flex:1" onclick="addExtra('NB')">+1 NB</button>
-      <button class="btn btn-r" onclick="resetScoreZero()">0-0 Reset</button>
+      <button class="btn btn-r" onclick="resetScoreZero()">0-0</button>
       <button class="btn btn-r" onclick="undoBall()">↩ Undo</button>
     </div>
   </div>
@@ -123,14 +125,14 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <input type="text" id="tickerInp" placeholder="e.g. CSK NEED 24 RUNS IN 12 BALLS" oninput="liveTypeTicker()">
   </div>
 
-  <!-- 5. Copy Direct PRISM URL -->
+  <!-- 5. Direct PRISM Link -->
   <div class="grp">
-    <label>5. Copy Direct Link for PRISM Live (Never Resets!)</label>
+    <label>5. Copy Direct PRISM Link</label>
     <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct PRISM Link</button>
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
-  <!-- 6. YouTube API Key & AI Voice -->
+  <!-- 6. YouTube API & AI Voice -->
   <div class="grp">
     <label>6. YouTube API Key & Live Video ID</label>
     <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px">
@@ -142,7 +144,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px">
-    <span style="font-size:13px;font-weight:700">🎙️ AI Voice (Name + Comment)</span>
+    <span style="font-size:13px;font-weight:700">🎙️ AI Voice Reader (Turns Blue Light ON)</span>
     <input type="checkbox" id="aiChk" style="width:20px;height:20px" onchange="toggleAI(this.checked)">
   </div>
 
@@ -176,8 +178,8 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
 
     <div class="center-box" onclick="openPanel()">
-      <div class="dot-l" id="dotSync"></div>
-      <div class="dot-r" id="dotAI"></div>
+      <div class="dot-l" id="dotSync" title="Green = Live Sync Connected"></div>
+      <div class="dot-r" id="dotAI" title="Blue = AI Voice Active"></div>
       <div class="ball" id="lastBall">2</div>
     </div>
 
@@ -210,23 +212,27 @@ const BUILTIN_TEAMS=[
   {id:'wi-afg',lbl:'WEST INDIES vs AFGHANISTAN [SCHEDULED]',bN:'WEST INDIES',bC:'wi',c1:'#7f1d1d',r:0,w:0,b:0,lb:'VS',fN:'AFGHANISTAN',fC:'af',c2:'#1d4ed8',fS:'SCHEDULED',t:'SCHEDULED MATCH'}
 ];
 
-let st={...BUILTIN_TEAMS[0],bg:'bg-transparent',ai:false,ts:0};
+let allTeams=[...BUILTIN_TEAMS];
+let st={...BUILTIN_TEAMS[0],bg:'bg-transparent',ai:true,ts:0};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v3_stream';
+const TOPIC='cricket/live/kinggopan_v4_stream';
 let client=null;
 const qp=new URLSearchParams(location.search);
-const isUrlLocked=qp.has('bat')||qp.has('bowl');
 
-const sel=document.getElementById('matchSel');
-BUILTIN_TEAMS.forEach(m=>{
-  let o=document.createElement('option');
-  o.value=m.id;o.textContent=m.lbl;
-  sel.appendChild(o);
-});
+function buildDropdown(){
+  const sel=document.getElementById('matchSel');
+  sel.innerHTML='';
+  allTeams.forEach(m=>{
+    let o=document.createElement('option');
+    o.value=m.id;o.textContent=m.lbl;
+    if(m.id===st.id)o.selected=true;
+    sel.appendChild(o);
+  });
+}
 
-sel.onchange=e=>{
-  let f=BUILTIN_TEAMS.find(x=>x.id===e.target.value);
+document.getElementById('matchSel').onchange=e=>{
+  let f=allTeams.find(x=>x.id===e.target.value);
   if(f){
     hist.push({...st});
     st={...st,...f,ts:Date.now()};
@@ -261,6 +267,38 @@ function liveTypeTicker(){
   if(v){st.t=v.toUpperCase();st.ts=Date.now();render();sync();}
 }
 
+async function fetchESPN(){
+  try{
+    let r=await fetch('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel?_t='+Date.now());
+    let d=await r.json();
+    let list=[];
+    (d.scores||[]).forEach(lg=>(lg.events||[]).forEach(ev=>{
+      let state=ev.status?.type?.state;
+      let tag=state==='in'?'LIVE':state==='post'?'RESULT':'SCHEDULED';
+      let cs=ev.competitions?.[0]?.competitors||[];
+      if(cs.length>=2){
+        let n1=(cs[0].team?.shortDisplayName||'TEAM 1').toUpperCase();
+        let n2=(cs[1].team?.shortDisplayName||'TEAM 2').toUpperCase();
+        let sc=String(cs[0].score||'0/0').split('/');
+        list.push({
+          id:'espn-'+ev.id,lbl:`${n1} vs ${n2} [${tag}]`,
+          bN:n1,bC:(cs[0].team?.abbreviation||n1.slice(0,3)).toUpperCase(),c1:'#1d4ed8',
+          r:parseInt(sc[0])||0,w:parseInt(sc[1])||0,b:tag==='LIVE'?60:0,lb:tag==='LIVE'?'•':'VS',
+          fN:n2,fC:(cs[1].team?.abbreviation||n2.slice(0,3)).toUpperCase(),c2:'#047857',
+          fS:tag==='LIVE'?'BOWLING':tag,t:(ev.status?.type?.detail||tag).toUpperCase()
+        });
+      }
+    }));
+    if(list.length){
+      allTeams=[...list,...BUILTIN_TEAMS];
+      buildDropdown();
+      let activeEspn=list.find(x=>x.id===st.id);
+      if(activeEspn){st={...st,...activeEspn};render();}
+      document.getElementById('espnNote').textContent=`Auto-Refreshed: ${list.length} ESPN + All Teams`;
+    }
+  }catch(e){}
+}
+
 function updatePrismUrlBox(){
   let base=location.origin+location.pathname;
   let p=new URLSearchParams();
@@ -268,7 +306,6 @@ function updatePrismUrlBox(){
   p.set('bowl',st.fN);
   p.set('c1',st.c1.replace('#',''));
   p.set('c2',st.c2.replace('#',''));
-  if(st.r>0||st.w>0){p.set('r',st.r);p.set('w',st.w);p.set('b',st.b);}
   let full=`${base}?${p.toString()}`;
   document.getElementById('prismUrlBox').textContent=full;
   return full;
@@ -277,7 +314,7 @@ function updatePrismUrlBox(){
 function copyPrismUrl(){
   let u=updatePrismUrlBox();
   if(navigator.clipboard)navigator.clipboard.writeText(u);
-  alert('Copied! Paste this link into PRISM Live Edit URL:\n\n'+u);
+  alert('Copied PRISM Link:\n\n'+u);
 }
 
 function makeGrad(hex){
@@ -312,9 +349,9 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v3',JSON.stringify(st));
+  localStorage.setItem('ck_st_v4',JSON.stringify(st));
   if(client&&client.connected){
-    client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:false});
+    client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
 }
 
@@ -359,8 +396,8 @@ function nextDemo(){
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Scoreboard team and theme are locked and working!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Scoreboard team and theme are locked and working!'}));
+  speak('Gopakumar','Both lights are ON and live sync is working!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Both lights are ON and live sync is working!'}));
 }
 
 // YouTube Chat
@@ -386,37 +423,33 @@ async function connectYT(){
   }catch(e){document.getElementById('ytNote').textContent='Connection Error';}
 }
 
-try{let s=JSON.parse(localStorage.getItem('ck_st_v3'));if(s)st={...st,...s};}catch(e){}
+buildDropdown();
+try{let s=JSON.parse(localStorage.getItem('ck_st_v4'));if(s)st={...st,...s};}catch(e){}
 
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=st.bN.slice(0,3);}
 if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=st.fN.slice(0,3);}
 if(qp.get('c1'))st.c1='#'+qp.get('c1').replace('#','');
 if(qp.get('c2'))st.c2='#'+qp.get('c2').replace('#','');
-if(qp.get('r'))st.r=parseInt(qp.get('r'))||0;
-if(qp.get('w'))st.w=parseInt(qp.get('w'))||0;
-if(qp.get('b'))st.b=parseInt(qp.get('b'))||0;
 if(qp.get('control')==='1')openPanel();
 
 render();
+fetchESPN();
+setInterval(fetchESPN,10000);
 
 if(typeof mqtt!=='undefined'){
   client=mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
   client.on('connect',()=>{
     document.getElementById('dotSync').classList.add('on');
-    let b=document.getElementById('syncBadge');b.textContent='● Live Connected';b.classList.add('ok');
+    let b=document.getElementById('syncBadge');b.textContent='● Live Synced';b.classList.add('ok');
     client.subscribe(TOPIC);
+    if(qp.get('control')==='1')sync();
   });
   client.on('message',(t,msg)=>{
     try{
       let p=JSON.parse(msg.toString());
-      if(p.sid===SENDER_ID)return; // Ignore own echo so it never overwrites!
-      if(p.k==='ST'&&p.d&&p.d.ts>st.ts){
-        if(isUrlLocked){
-          // Keep URL-locked teams & colors, only sync score & ball updates
-          st.r=p.d.r;st.w=p.d.w;st.b=p.d.b;st.lb=p.d.lb;st.t=p.d.t;st.ts=p.d.ts;
-        }else{
-          st={...st,...p.d};
-        }
+      if(p.sid===SENDER_ID)return;
+      if(p.k==='ST'&&p.d){
+        st={...st,...p.d};
         render();
       }else if(p.k==='SP'){speak(p.a,p.m);}
     }catch(e){}
