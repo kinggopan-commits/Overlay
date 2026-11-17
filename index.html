@@ -6,7 +6,9 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Live Cricket Broadcast Overlay</title>
+  <title>Live Cricket Broadcast Overlay & Remote</title>
+  <!-- Real-time Cloud Sync Library (MQTT over Secure WebSockets) -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -21,13 +23,19 @@
       height: 100%;
       background: transparent;
       font-family: 'Arial Black', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     body.bg-green { background: #00b140; }
     body.bg-dark { background: #0b0f19; }
     body.bg-transparent { background: transparent; }
+    body.control-mode {
+      background: #0b0f19;
+      overflow-y: auto;
+      padding-bottom: 140px;
+    }
 
+    /* Lower-Third Broadcast Container */
     .overlay-wrapper {
       position: fixed;
       bottom: 14px;
@@ -146,16 +154,11 @@
       cursor: pointer;
       position: relative;
       z-index: 1;
-      transition: transform 0.15s ease;
-    }
-
-    .center-ball-box:active {
-      transform: scale(0.95);
     }
 
     .ball-value {
       color: #ffffff;
-      font-size: 34px;
+      font-size: 36px;
       font-weight: 900;
       line-height: 1;
       text-shadow: 0 2px 10px rgba(255, 255, 255, 0.35);
@@ -165,24 +168,22 @@
     .ball-value.is-six { color: #facc15; }
     .ball-value.is-wicket { color: #ef4444; }
 
-    .live-pulse-dot {
+    .sync-dot {
       position: absolute;
       top: 5px;
       left: 8px;
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #ef4444;
-      animation: pulseAnim 1.5s infinite;
+      background: #f59e0b;
     }
 
-    @keyframes pulseAnim {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.3; transform: scale(1.3); }
-      100% { opacity: 1; transform: scale(1); }
+    .sync-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
     }
 
-    .settings-hint-dot {
+    .ai-dot {
       position: absolute;
       top: 5px;
       right: 8px;
@@ -192,9 +193,9 @@
       background: #6b7280;
     }
 
-    .settings-hint-dot.ai-active {
-      background: #22c55e;
-      box-shadow: 0 0 8px #22c55e;
+    .ai-dot.active {
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
     }
 
     .wing-right {
@@ -278,7 +279,7 @@
       bottom: 124px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.92);
+      background: rgba(15, 23, 42, 0.94);
       color: #f8fafc;
       border: 1px solid #38bdf8;
       padding: 6px 14px;
@@ -286,7 +287,7 @@
       font-family: 'Segoe UI', Roboto, sans-serif;
       font-size: 12px;
       font-weight: 600;
-      max-width: 90%;
+      max-width: 92%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -295,63 +296,55 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.82);
+    /* Remote Control Panel UI (Shown when ?control=1 or Center Box tapped) */
+    .control-panel {
       display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-      padding: 10px;
-      font-family: 'Segoe UI', Roboto, sans-serif;
-    }
-
-    .modal-backdrop.open {
-      display: flex;
-    }
-
-    .settings-card {
+      max-width: 540px;
+      margin: 12px auto;
       background: #111827;
       color: #f9fafb;
-      width: 100%;
-      max-width: 460px;
-      max-height: 92vh;
-      overflow-y: auto;
-      border-radius: 14px;
       border: 1px solid #374151;
+      border-radius: 14px;
       padding: 14px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.85);
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
     }
 
-    .modal-header {
+    .control-panel.open {
+      display: block;
+    }
+
+    .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #1f2937;
       padding-bottom: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .modal-header h3 {
+    .panel-header h3 {
       font-size: 15px;
       font-weight: 700;
       color: #facc15;
     }
 
-    .close-btn {
-      background: #ef4444;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 4px 10px;
-      font-size: 13px;
+    .sync-badge {
+      font-size: 11px;
       font-weight: 700;
-      cursor: pointer;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #374151;
+      color: #fbbf24;
+    }
+
+    .sync-badge.live {
+      background: #065f46;
+      color: #34d399;
     }
 
     .form-group {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     .form-group label {
@@ -368,13 +361,9 @@
       color: #ffffff;
       border: 1px solid #374151;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 9px 10px;
       font-size: 13px;
       outline: none;
-    }
-
-    select:focus, input:focus {
-      border-color: #38bdf8;
     }
 
     .row-flex {
@@ -388,31 +377,33 @@
       color: #fff;
       border: none;
       border-radius: 8px;
-      padding: 8px 12px;
+      padding: 9px 12px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
     }
 
+    .btn:active { opacity: 0.85; }
     .btn-green { background: #16a34a; }
     .btn-amber { background: #d97706; }
+    .btn-red { background: #dc2626; }
     .btn-dark { background: #374151; }
 
     .ball-pad {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
+      gap: 6px;
     }
 
     .ball-pad button {
       background: #1f2937;
       color: #fff;
-      border: 1px solid #374151;
-      border-radius: 6px;
-      padding: 7px 0;
-      font-weight: 800;
-      font-size: 13px;
+      border: 1px solid #4b5563;
+      border-radius: 8px;
+      padding: 12px 0;
+      font-weight: 900;
+      font-size: 16px;
       cursor: pointer;
     }
 
@@ -426,31 +417,20 @@
       justify-content: space-between;
       align-items: center;
       background: #1f2937;
-      padding: 8px 12px;
+      padding: 9px 12px;
       border-radius: 8px;
       margin-bottom: 10px;
     }
 
     .toggle-row span {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
     }
 
     .status-note {
       font-size: 11px;
       color: #34d399;
-      margin-top: 3px;
-    }
-
-    .url-box {
-      background: #0f172a;
-      border: 1px dashed #38bdf8;
-      padding: 8px;
-      border-radius: 8px;
-      font-size: 11px;
-      color: #e2e8f0;
-      word-break: break-all;
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
     @media (max-width: 600px) {
@@ -468,8 +448,90 @@
 </head>
 <body class="bg-transparent">
 
+  <!-- Remote Control Dashboard (For Chrome Browser) -->
+  <div class="control-panel" id="controlPanel">
+    <div class="panel-header">
+      <h3>🎛️ Live Remote Controller (PRISM Sync)</h3>
+      <span class="sync-badge" id="syncStatusBadge">Connecting...</span>
+    </div>
+
+    <!-- 1. Team / Match Selector -->
+    <div class="form-group">
+      <label>1. Select Match / Teams ([LIVE] & [SCHEDULED])</label>
+      <div class="row-flex">
+        <select id="matchSelectBox"></select>
+        <button class="btn btn-amber" id="swapInningsBtn" title="Swap Batting/Bowling">⇄ Swap</button>
+      </div>
+    </div>
+
+    <!-- 2. Live Ball & Score Pad -->
+    <div class="form-group">
+      <label>2. Tap Ball Result (Updates PRISM Live in 1 Second!)</label>
+      <div class="ball-pad">
+        <button onclick="sendBallUpdate('0')">0</button>
+        <button onclick="sendBallUpdate('1')">1</button>
+        <button onclick="sendBallUpdate('2')">2</button>
+        <button onclick="sendBallUpdate('3')">3</button>
+        <button onclick="sendBallUpdate('4')" style="border-color:#38bdf8;color:#38bdf8;">4</button>
+        <button onclick="sendBallUpdate('6')" style="border-color:#facc15;color:#facc15;">6</button>
+        <button onclick="sendBallUpdate('W')" style="background:#991b1b;border-color:#ef4444;">W</button>
+      </div>
+      <div class="row-flex" style="margin-top:8px;">
+        <button class="btn btn-dark" style="flex:1;" onclick="sendExtraRun('WD')">+1 Wide</button>
+        <button class="btn btn-dark" style="flex:1;" onclick="sendExtraRun('NB')">+1 No Ball</button>
+        <button class="btn btn-red" onclick="undoLastBall()">↩ Undo</button>
+      </div>
+    </div>
+
+    <!-- 3. Custom Bottom Status Text -->
+    <div class="form-group">
+      <label>3. Bottom Ticker / Toss / Target Message</label>
+      <div class="row-flex">
+        <input type="text" id="customStatusInput" placeholder="e.g. INDIA NEED 45 RUNS IN 24 BALLS" />
+        <button class="btn btn-green" onclick="updateBottomText()">Update</button>
+      </div>
+    </div>
+
+    <!-- 4. YouTube Live Chat API & AI Voice Reader -->
+    <div class="form-group">
+      <label>4. YouTube Data API v3 Key & Live Video ID</label>
+      <input type="password" id="ytApiKeyInput" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:6px;" />
+      <div class="row-flex">
+        <input type="text" id="ytVideoIdInput" placeholder="YouTube Live Video URL or ID" />
+        <button class="btn btn-green" id="connectYtBtn">Connect</button>
+      </div>
+      <div class="status-note" id="ytChatStatus">Mode: Demo Chat (Enter API Key + Video ID for Real Chat)</div>
+    </div>
+
+    <div class="toggle-row">
+      <span>🎙️ AI Comment Reader (Name + Comment)</span>
+      <input type="checkbox" id="aiReaderToggle" style="width:20px;height:20px;cursor:pointer;" />
+    </div>
+
+    <div class="form-group">
+      <div class="row-flex">
+        <button class="btn btn-green" id="testVoiceBtn" style="flex:1;">🔊 Test Voice</button>
+        <button class="btn btn-dark" id="readNextDemoBtn">▶ Read Next</button>
+        <button class="btn" id="closePanelBtn">Hide Panel</button>
+      </div>
+      <div class="status-note" id="voiceStatusText">Voice Engine: Ready</div>
+    </div>
+
+    <!-- 5. Background Mode -->
+    <div class="form-group" style="margin-bottom:0;">
+      <label>5. Overlay Background (Synced to PRISM)</label>
+      <div class="row-flex">
+        <button class="btn btn-dark" style="flex:1;" onclick="changeBgMode('bg-transparent')">Transparent</button>
+        <button class="btn btn-green" style="flex:1;" onclick="changeBgMode('bg-green')">Green Screen</button>
+        <button class="btn btn-dark" style="flex:1;" onclick="changeBgMode('bg-dark')">Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live AI Comment Subtitle Toast -->
   <div id="aiToast" class="ai-toast"></div>
 
+  <!-- Lower-Third TV Broadcast Scoreboard -->
   <div class="overlay-wrapper" id="overlayWrapper">
     <div class="top-accent-bar"></div>
     <div class="scoreboard-main">
@@ -486,9 +548,9 @@
         </div>
       </div>
 
-      <div class="center-ball-box" id="centerSettingsBtn" title="Tap for Settings">
-        <div class="live-pulse-dot" id="liveDot" title="Auto-Refresh Active (Every 10s)"></div>
-        <div class="settings-hint-dot" id="aiDot"></div>
+      <div class="center-ball-box" id="centerSettingsBtn" title="Tap for Remote Controls">
+        <div class="sync-dot" id="syncDot" title="Cloud Sync Status"></div>
+        <div class="ai-dot" id="aiDot" title="AI Voice Status"></div>
         <div class="ball-value" id="lastBallText">2</div>
       </div>
 
@@ -509,107 +571,11 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
-  <div class="modal-backdrop" id="settingsModal">
-    <div class="settings-card">
-      <div class="modal-header">
-        <h3>⚙️ Live Cricket & AI Settings (10s Live Sync)</h3>
-        <button class="close-btn" id="closeModalBtn">✕ Close</button>
-      </div>
-
-      <div class="form-group">
-        <label>Select Match / Teams ([LIVE] & [SCHEDULED])</label>
-        <div class="row-flex">
-          <select id="matchSelectBox"></select>
-          <button class="btn btn-amber" id="refreshEspnBtn" title="Refresh ESPN Live Feed">🔄</button>
-        </div>
-        <div class="status-note" id="espnStatusText">Connecting to ESPN Live Feed...</div>
-      </div>
-
-      <div class="form-group">
-        <label>YouTube Data API v3 Key (For Real Live Chat Comments)</label>
-        <input type="password" id="ytApiKeyInput" placeholder="Paste YouTube API Key (AIzaSy...)" />
-      </div>
-
-      <div class="form-group">
-        <label>YouTube Live Video URL or Video ID</label>
-        <div class="row-flex">
-          <input type="text" id="ytVideoIdInput" placeholder="e.g. dQw4w9WgXcQ or YouTube Live link" />
-          <button class="btn btn-green" id="connectYtBtn">Connect</button>
-        </div>
-        <div class="status-note" id="ytChatStatus">Mode: Demo Live Chat (Add API Key + Video ID for Real Chat)</div>
-      </div>
-
-      <div class="toggle-row">
-        <span>🎙️ AI Comment Reader (Name + Comment)</span>
-        <input type="checkbox" id="aiReaderToggle" style="width:20px;height:20px;cursor:pointer;" />
-      </div>
-
-      <div class="form-group">
-        <div class="row-flex">
-          <button class="btn btn-green" id="testVoiceBtn" style="flex:1;">🔊 Test Voice</button>
-          <button class="btn btn-dark" id="readNextDemoBtn">▶ Read Next</button>
-          <button class="btn" id="copyPrismUrlBtn">📋 Copy PRISM Link</button>
-        </div>
-        <div class="status-note" id="voiceStatusText">Voice Engine: Human TTS Ready (No Beep)</div>
-        <div class="url-box" id="generatedUrlPreview"></div>
-      </div>
-
-      <div class="form-group">
-        <label>Quick Ball Update (Manual Score Control)</label>
-        <div class="ball-pad">
-          <button onclick="recordBall('0')">0</button>
-          <button onclick="recordBall('1')">1</button>
-          <button onclick="recordBall('2')">2</button>
-          <button onclick="recordBall('3')">3</button>
-          <button onclick="recordBall('4')">4</button>
-          <button onclick="recordBall('6')">6</button>
-          <button onclick="recordBall('W')" style="background:#991b1b;">W</button>
-        </div>
-      </div>
-
-      <div class="form-group" style="margin-bottom:0;">
-        <label>Overlay Background Mode</label>
-        <div class="row-flex">
-          <button class="btn btn-dark" style="flex:1;" onclick="setBgMode('bg-transparent')">Transparent</button>
-          <button class="btn btn-green" style="flex:1;" onclick="setBgMode('bg-green')">Green Screen</button>
-          <button class="btn btn-dark" style="flex:1;" onclick="setBgMode('bg-dark')">Dark</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script>
-    const TEAM_STYLES = {
-      'IND': { code: 'IN', bg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)' },
-      'INDIA': { code: 'IN', bg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)' },
-      'AUS': { code: 'AU', bg: 'linear-gradient(135deg, #eab308 0%, #a16207 100%)' },
-      'AUSTRALIA': { code: 'AU', bg: 'linear-gradient(135deg, #eab308 0%, #a16207 100%)' },
-      'PAK': { code: 'PK', bg: 'linear-gradient(135deg, #046a38 0%, #024222 100%)' },
-      'PAKISTAN': { code: 'PK', bg: 'linear-gradient(135deg, #046a38 0%, #024222 100%)' },
-      'SL': { code: 'LK', bg: 'linear-gradient(135deg, #d4a000 0%, #9e7400 100%)' },
-      'SRI LANKA': { code: 'LK', bg: 'linear-gradient(135deg, #d4a000 0%, #9e7400 100%)' },
-      'ENG': { code: 'GB-ENG', bg: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)' },
-      'ENGLAND': { code: 'GB-ENG', bg: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)' },
-      'SA': { code: 'ZA', bg: 'linear-gradient(135deg, #15803d 0%, #14532d 100%)' },
-      'SOUTH AFRICA': { code: 'ZA', bg: 'linear-gradient(135deg, #15803d 0%, #14532d 100%)' },
-      'NZ': { code: 'NZ', bg: 'linear-gradient(135deg, #1f2937 0%, #030712 100%)' },
-      'NEW ZEALAND': { code: 'NZ', bg: 'linear-gradient(135deg, #1f2937 0%, #030712 100%)' },
-      'BAN': { code: 'BD', bg: 'linear-gradient(135deg, #065f46 0%, #022c22 100%)' },
-      'BANGLADESH': { code: 'BD', bg: 'linear-gradient(135deg, #065f46 0%, #022c22 100%)' },
-      'WI': { code: 'WI', bg: 'linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%)' },
-      'AFG': { code: 'AF', bg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' },
-      'CSK': { code: 'CSK', bg: 'linear-gradient(135deg, #facc15 0%, #ca8a04 100%)' },
-      'MI': { code: 'MI', bg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' },
-      'RCB': { code: 'RCB', bg: 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' },
-      'KKR': { code: 'KKR', bg: 'linear-gradient(135deg, #581c87 0%, #3b0764 100%)' }
-    };
-
-    const BUILTIN_MATCHES = [
+    const MATCHES = [
       {
         id: 'sl-pak',
-        label: 'SRI LANKA vs PAKISTAN - ODI [PRESET]',
-        statusTag: 'PRESET',
+        label: 'SRI LANKA vs PAKISTAN - ODI [LIVE]',
         batTeam: 'SRI LANKA',
         batCode: 'LK',
         batBg: 'linear-gradient(135deg, #d4a000 0%, #9e7400 100%)',
@@ -625,8 +591,7 @@
       },
       {
         id: 'ind-aus',
-        label: 'INDIA vs AUSTRALIA - T20I [PRESET]',
-        statusTag: 'PRESET',
+        label: 'INDIA vs AUSTRALIA - T20I [LIVE]',
         batTeam: 'INDIA',
         batCode: 'IN',
         batBg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)',
@@ -641,9 +606,24 @@
         bottomText: 'AUS OPT TO BOWL'
       },
       {
+        id: 'ind-pak',
+        label: 'INDIA vs PAKISTAN - CHAMPIONS CUP [SCHEDULED]',
+        batTeam: 'INDIA',
+        batCode: 'IN',
+        batBg: 'linear-gradient(135deg, #0057b8 0%, #00357a 100%)',
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        lastBall: 'VS',
+        bowlTeam: 'PAKISTAN',
+        bowlCode: 'PK',
+        bowlBg: 'linear-gradient(135deg, #046a38 0%, #024222 100%)',
+        bowlStatus: 'SCHEDULED',
+        bottomText: 'MATCH STARTS AT 7:30 PM IST'
+      },
+      {
         id: 'csk-mi',
-        label: 'CHENNAI vs MUMBAI - IPL [PRESET]',
-        statusTag: 'PRESET',
+        label: 'CHENNAI vs MUMBAI - IPL [LIVE]',
         batTeam: 'CHENNAI',
         batCode: 'CSK',
         batBg: 'linear-gradient(135deg, #facc15 0%, #ca8a04 100%)',
@@ -659,8 +639,7 @@
       },
       {
         id: 'rcb-kkr',
-        label: 'BENGALURU vs KOLKATA - IPL [PRESET]',
-        statusTag: 'PRESET',
+        label: 'BENGALURU vs KOLKATA - IPL [SCHEDULED]',
         batTeam: 'BENGALURU',
         batCode: 'RCB',
         batBg: 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)',
@@ -673,102 +652,174 @@
         bowlBg: 'linear-gradient(135deg, #581c87 0%, #3b0764 100%)',
         bowlStatus: 'SCHEDULED',
         bottomText: 'TOSS AT 7:00 PM IST'
+      },
+      {
+        id: 'srh-rr',
+        label: 'HYDERABAD vs RAJASTHAN - IPL [SCHEDULED]',
+        batTeam: 'HYDERABAD',
+        batCode: 'SRH',
+        batBg: 'linear-gradient(135deg, #ea580c 0%, #9a3412 100%)',
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        lastBall: 'VS',
+        bowlTeam: 'RAJASTHAN',
+        bowlCode: 'RR',
+        bowlBg: 'linear-gradient(135deg, #db2777 0%, #831843 100%)',
+        bowlStatus: 'SCHEDULED',
+        bottomText: 'IPL SCHEDULED MATCH'
+      },
+      {
+        id: 'gt-lsg',
+        label: 'GUJARAT vs LUCKNOW - IPL [SCHEDULED]',
+        batTeam: 'GUJARAT',
+        batCode: 'GT',
+        batBg: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        lastBall: 'VS',
+        bowlTeam: 'LUCKNOW',
+        bowlCode: 'LSG',
+        bowlBg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+        bowlStatus: 'SCHEDULED',
+        bottomText: 'IPL SCHEDULED MATCH'
+      },
+      {
+        id: 'dc-pbks',
+        label: 'DELHI vs PUNJAB - IPL [SCHEDULED]',
+        batTeam: 'DELHI',
+        batCode: 'DC',
+        batBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        lastBall: 'VS',
+        bowlTeam: 'PUNJAB',
+        bowlCode: 'PBKS',
+        bowlBg: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+        bowlStatus: 'SCHEDULED',
+        bottomText: 'IPL SCHEDULED MATCH'
+      },
+      {
+        id: 'eng-sa',
+        label: 'ENGLAND vs SOUTH AFRICA - ODI [LIVE]',
+        batTeam: 'ENGLAND',
+        batCode: 'GB-ENG',
+        batBg: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)',
+        runs: 215,
+        wickets: 6,
+        balls: 210,
+        lastBall: '1',
+        bowlTeam: 'SOUTH AFRICA',
+        bowlCode: 'ZA',
+        bowlBg: 'linear-gradient(135deg, #15803d 0%, #14532d 100%)',
+        bowlStatus: 'BOWLING',
+        bottomText: 'ENG OPT TO BAT'
       }
     ];
 
-    let allMatches = [...BUILTIN_MATCHES];
-    let selectedMatchId = 'auto';
-    let userManuallySelected = false;
-    let currentMatch = { ...BUILTIN_MATCHES[0] };
+    let state = {
+      ...MATCHES[0],
+      bgMode: 'bg-transparent',
+      aiEnabled: false
+    };
+    let historyStack = [];
 
-    const DEMO_COMMENTS = [
-      { author: 'Arjun Menon', text: 'What a brilliant spell of bowling! Complete pressure on the batters.' },
-      { author: 'Rahul Nair', text: 'Need a solid partnership right now to build a big total.' },
-      { author: 'Vishnu Kumar', text: 'Great stream bro, scoreboard overlay looks just like TV broadcast!' },
-      { author: 'Faisal Khan', text: 'Bowlers are hitting the deck hard today.' },
-      { author: 'Sneha Raj', text: 'Awesome live commentary and real-time score updates!' }
-    ];
-    let demoIndex = 0;
-    let ytLiveChatId = null;
-    let ytNextPageToken = null;
-    let ytPollTimer = null;
-    let seenMessageIds = new Set();
-    let speechQueue = [];
-    let isSpeaking = false;
-    let currentAudioEl = null;
-
-    const matchSelectBox = document.getElementById('matchSelectBox');
-    const settingsModal = document.getElementById('settingsModal');
-    const centerSettingsBtn = document.getElementById('centerSettingsBtn');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const aiReaderToggle = document.getElementById('aiReaderToggle');
-    const aiDot = document.getElementById('aiDot');
-    const aiToast = document.getElementById('aiToast');
-
+    // Cloud Sync Channel (Unique to kinggopan-commits)
     const urlParams = new URLSearchParams(window.location.search);
-    const paramSettings = urlParams.get('settings');
-    const paramKey = urlParams.get('key');
-    const paramVid = urlParams.get('vid');
-    const paramMatch = urlParams.get('match');
-    const paramAi = urlParams.get('ai');
-    const paramBg = urlParams.get('bg');
+    const roomName = urlParams.get('room') || 'kinggopan_live_cricket_2026';
+    const MQTT_TOPIC = `cricket/overlay/sync/${roomName}`;
+    let mqttClient = null;
 
-    const initialApiKey = paramKey || localStorage.getItem('yt_api_key') || '';
-    const initialVideoId = paramVid || localStorage.getItem('yt_video_id') || '';
-    document.getElementById('ytApiKeyInput').value = initialApiKey;
-    document.getElementById('ytVideoIdInput').value = initialVideoId;
+    function initCloudSync() {
+      if (typeof mqtt === 'undefined') return;
+      const clientId = 'crt_' + Math.random().toString(16).slice(2, 10);
+      mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+        clientId: clientId,
+        clean: true,
+        reconnectPeriod: 2000
+      });
 
-    if (paramBg) setBgMode('bg-' + paramBg);
+      mqttClient.on('connect', () => {
+        document.getElementById('syncDot').classList.add('connected');
+        const badge = document.getElementById('syncStatusBadge');
+        badge.textContent = '● Live Synced';
+        badge.classList.add('live');
+        mqttClient.subscribe(MQTT_TOPIC);
 
-    function updateGeneratedUrlPreview() {
-      const base = window.location.origin + window.location.pathname;
-      const key = document.getElementById('ytApiKeyInput').value.trim();
-      const vid = extractVideoId(document.getElementById('ytVideoIdInput').value.trim());
-      const aiOn = aiReaderToggle.checked ? '1' : '0';
-      const p = new URLSearchParams();
-      if (selectedMatchId && selectedMatchId !== 'auto') p.set('match', selectedMatchId);
-      if (key) p.set('key', key);
-      if (vid) p.set('vid', vid);
-      if (aiOn === '1') p.set('ai', '1');
-      const fullUrl = p.toString() ? `${base}?${p.toString()}` : base;
-      document.getElementById('generatedUrlPreview').textContent = 'PRISM Direct URL: ' + fullUrl;
-      return fullUrl;
+        // If controller opens, publish current state immediately
+        if (urlParams.get('control') === '1') {
+          publishState();
+        }
+      });
+
+      mqttClient.on('offline', () => {
+        document.getElementById('syncDot').classList.remove('connected');
+        const badge = document.getElementById('syncStatusBadge');
+        badge.textContent = 'Reconnecting...';
+        badge.classList.remove('live');
+      });
+
+      mqttClient.on('message', (topic, message) => {
+        try {
+          const payload = JSON.parse(message.toString());
+          if (payload && payload.type === 'STATE_UPDATE') {
+            state = { ...state, ...payload.data };
+            applyStateToUI();
+          } else if (payload && payload.type === 'SPEAK_COMMENT') {
+            enqueueCommentSpeech(payload.author, payload.text);
+          }
+        } catch (e) {}
+      });
     }
 
-    document.getElementById('copyPrismUrlBtn').addEventListener('click', () => {
-      const url = updateGeneratedUrlPreview();
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(url);
-        document.getElementById('voiceStatusText').textContent = 'Copied PRISM Direct URL!';
+    function publishState() {
+      localStorage.setItem('cricket_overlay_state', JSON.stringify(state));
+      if (mqttClient && mqttClient.connected) {
+        mqttClient.publish(MQTT_TOPIC, JSON.stringify({
+          type: 'STATE_UPDATE',
+          data: state
+        }), { retain: true });
       }
-    });
+    }
 
-    function renderScoreboard() {
-      document.getElementById('batTeamName').textContent = currentMatch.batTeam;
-      document.getElementById('wingLeft').style.background = currentMatch.batBg;
+    function applyStateToUI() {
+      document.getElementById('batTeamName').textContent = state.batTeam;
+      document.getElementById('wingLeft').style.background = state.batBg;
 
-      const oversFormatted = currentMatch.oversStr || (Math.floor(currentMatch.balls / 6) + '.' + (currentMatch.balls % 6));
-      document.getElementById('batScore').textContent = `${currentMatch.runs}-${currentMatch.wickets}`;
+      const oversFormatted = Math.floor(state.balls / 6) + '.' + (state.balls % 6);
+      document.getElementById('batScore').textContent = `${state.runs}-${state.wickets}`;
       document.getElementById('batOvers').textContent = oversFormatted;
 
       const ballEl = document.getElementById('lastBallText');
-      ballEl.textContent = currentMatch.lastBall;
+      ballEl.textContent = state.lastBall;
       ballEl.className = 'ball-value';
-      if (currentMatch.lastBall === '4') ballEl.classList.add('is-four');
-      if (currentMatch.lastBall === '6') ballEl.classList.add('is-six');
-      if (currentMatch.lastBall === 'W') ballEl.classList.add('is-wicket');
+      if (state.lastBall === '4') ballEl.classList.add('is-four');
+      if (state.lastBall === '6') ballEl.classList.add('is-six');
+      if (state.lastBall === 'W') ballEl.classList.add('is-wicket');
 
-      document.getElementById('bowlTeamName').textContent = currentMatch.bowlTeam;
-      document.getElementById('wingRight').style.background = currentMatch.bowlBg;
-      document.getElementById('bowlStatusText').textContent = currentMatch.bowlStatus;
-      document.getElementById('matchStatusBar').textContent = currentMatch.bottomText;
+      document.getElementById('bowlTeamName').textContent = state.bowlTeam;
+      document.getElementById('wingRight').style.background = state.bowlBg;
+      document.getElementById('bowlStatusText').textContent = state.bowlStatus;
+      document.getElementById('matchStatusBar').textContent = state.bottomText;
 
-      const crr = currentMatch.crrStr || (currentMatch.balls > 0 ? ((currentMatch.runs / currentMatch.balls) * 6).toFixed(2) : '0.00');
+      const crr = state.balls > 0 ? ((state.runs / state.balls) * 6).toFixed(2) : '0.00';
       document.getElementById('crrValue').textContent = crr;
 
-      setFlagBadge('batFlag', currentMatch.batCode, currentMatch.batTeam);
-      setFlagBadge('bowlFlag', currentMatch.bowlCode, currentMatch.bowlTeam);
-      updateGeneratedUrlPreview();
+      setFlagBadge('batFlag', state.batCode, state.batTeam);
+      setFlagBadge('bowlFlag', state.bowlCode, state.bowlTeam);
+
+      if (!document.body.classList.contains('control-mode')) {
+        document.body.className = state.bgMode || 'bg-transparent';
+      }
+
+      document.getElementById('aiReaderToggle').checked = !!state.aiEnabled;
+      if (state.aiEnabled) {
+        document.getElementById('aiDot').classList.add('active');
+      } else {
+        document.getElementById('aiDot').classList.remove('active');
+      }
     }
 
     function setFlagBadge(elId, code, teamName) {
@@ -781,209 +832,137 @@
       }
     }
 
-    function populateMatchDropdown() {
-      matchSelectBox.innerHTML = '';
-      allMatches.forEach((m) => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        opt.textContent = m.label;
-        if (m.id === selectedMatchId) opt.selected = true;
-        matchSelectBox.appendChild(opt);
-      });
-    }
+    // Control Actions
+    const matchSelectBox = document.getElementById('matchSelectBox');
+    MATCHES.forEach((m) => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.label;
+      matchSelectBox.appendChild(opt);
+    });
 
     matchSelectBox.addEventListener('change', (e) => {
-      selectedMatchId = e.target.value;
-      userManuallySelected = true;
-      const selected = allMatches.find(m => m.id === selectedMatchId);
-      if (selected) {
-        currentMatch = { ...selected };
-        renderScoreboard();
+      const found = MATCHES.find(m => m.id === e.target.value);
+      if (found) {
+        historyStack.push({ ...state });
+        state = { ...state, ...found };
+        applyStateToUI();
+        publishState();
       }
     });
 
-    // Multi-Source Resilient Fetcher (Direct + CORS Proxies)
-    async function fetchJsonWithCorsFallback(targetUrl) {
-      const bustUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
-      const endpoints = [
-        bustUrl,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(bustUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(bustUrl)}`
-      ];
+    document.getElementById('swapInningsBtn').addEventListener('click', () => {
+      historyStack.push({ ...state });
+      const oldBat = { team: state.batTeam, code: state.batCode, bg: state.batBg };
+      state.batTeam = state.bowlTeam;
+      state.batCode = state.bowlCode;
+      state.batBg = state.bowlBg;
+      state.bowlTeam = oldBat.team;
+      state.bowlCode = oldBat.code;
+      state.bowlBg = oldBat.bg;
+      state.runs = 0;
+      state.wickets = 0;
+      state.balls = 0;
+      state.lastBall = '0';
+      state.bowlStatus = 'BOWLING';
+      state.bottomText = `${state.batTeam} CHASING TARGET`;
+      applyStateToUI();
+      publishState();
+    });
 
-      for (const ep of endpoints) {
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 5000);
-          const res = await fetch(ep, { cache: 'no-store', signal: controller.signal });
-          clearTimeout(timer);
-          if (res.ok) {
-            return await res.json();
-          }
-        } catch (e) {
-          // Try next proxy
-        }
-      }
-      throw new Error('All live endpoints unreachable');
-    }
-
-    async function fetchEspnMatches(isAuto = false) {
-      const statusEl = document.getElementById('espnStatusText');
-      const liveDot = document.getElementById('liveDot');
-      if (!isAuto) statusEl.textContent = 'Syncing live cricket scores...';
-
-      try {
-        const data = await fetchJsonWithCorsFallback('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel');
-        const espnList = [];
-
-        if (data && data.scores) {
-          data.scores.forEach(league => {
-            (league.events || []).forEach(ev => {
-              const state = ev.status?.type?.state;
-              let tag = 'SCHEDULED';
-              if (state === 'in') tag = 'LIVE';
-              else if (state === 'post') tag = 'RESULT';
-
-              const comps = ev.competitions?.[0]?.competitors || [];
-              if (comps.length >= 2) {
-                let bat = comps[0];
-                let bowl = comps[1];
-                // Identify active batting team
-                if (comps[1].score && (!comps[0].score || comps[1].winner === false)) {
-                  const s0 = String(comps[0].score || '');
-                  const s1 = String(comps[1].score || '');
-                  if (s1.includes('/') && !s0.includes('/')) {
-                    bat = comps[1];
-                    bowl = comps[0];
-                  }
-                }
-
-                const abbr1 = (bat.team?.abbreviation || '').toUpperCase();
-                const abbr2 = (bowl.team?.abbreviation || '').toUpperCase();
-                const name1 = (bat.team?.shortDisplayName || bat.team?.name || abbr1 || 'TEAM 1').toUpperCase();
-                const name2 = (bowl.team?.shortDisplayName || bowl.team?.name || abbr2 || 'TEAM 2').toUpperCase();
-
-                const rawScore = String(bat.score || '0/0');
-                const scoreMatch = rawScore.match(/(\d+)[\/\-](\d+)/);
-                const runs = scoreMatch ? parseInt(scoreMatch[1], 10) : (parseInt(rawScore, 10) || 0);
-                const wkts = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;
-
-                const ovMatch = rawScore.match(/\(([\d\.]+)\s*ov/i);
-                const oversStr = ovMatch ? ovMatch[1] : null;
-                let balls = 0;
-                if (oversStr) {
-                  const ovParts = oversStr.split('.');
-                  balls = (parseInt(ovParts[0], 10) || 0) * 6 + (parseInt(ovParts[1], 10) || 0);
-                }
-
-                const style1 = TEAM_STYLES[abbr1] || TEAM_STYLES[name1] || { code: abbr1 || name1.slice(0, 3), bg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' };
-                const style2 = TEAM_STYLES[abbr2] || TEAM_STYLES[name2] || { code: abbr2 || name2.slice(0, 3), bg: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)' };
-
-                const detailText = (ev.status?.type?.shortDetail || ev.status?.type?.detail || tag).toUpperCase();
-
-                espnList.push({
-                  id: 'espn-' + ev.id,
-                  label: `${name1} vs ${name2} [${tag}]`,
-                  statusTag: tag,
-                  batTeam: name1,
-                  batCode: style1.code,
-                  batBg: style1.bg,
-                  runs: runs,
-                  wickets: wkts,
-                  balls: balls,
-                  oversStr: oversStr || (balls > 0 ? (Math.floor(balls / 6) + '.' + (balls % 6)) : '0.0'),
-                  lastBall: tag === 'LIVE' ? 'LIVE' : 'VS',
-                  bowlTeam: name2,
-                  bowlCode: style2.code,
-                  bowlBg: style2.bg,
-                  bowlStatus: tag === 'LIVE' ? 'BOWLING' : tag,
-                  bottomText: detailText
-                });
-              }
-            });
-          });
-        }
-
-        if (espnList.length > 0) {
-          allMatches = [...espnList, ...BUILTIN_MATCHES];
-
-          // Auto-select first LIVE ESPN match unless user manually picked a preset
-          if (!userManuallySelected) {
-            const firstLive = espnList.find(m => m.statusTag === 'LIVE') || espnList[0];
-            if (firstLive) selectedMatchId = firstLive.id;
-          }
-
-          const updatedSelected = allMatches.find(m => m.id === selectedMatchId);
-          if (updatedSelected) {
-            currentMatch = { ...updatedSelected };
-            renderScoreboard();
-          }
-          populateMatchDropdown();
-          liveDot.style.background = '#22c55e';
-          const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          statusEl.textContent = `LIVE SYNC OK (${nowTime}) — ${espnList.length} matches`;
-        } else {
-          allMatches = [...BUILTIN_MATCHES];
-          populateMatchDropdown();
-          statusEl.textContent = 'No active ESPN matches right now. Use Quick Ball Pad or Presets.';
-        }
-      } catch (err) {
-        liveDot.style.background = '#f59e0b';
-        statusEl.textContent = 'Retrying live feed every 10s (Manual controls active)';
-      }
-    }
-
-    document.getElementById('refreshEspnBtn').addEventListener('click', () => fetchEspnMatches(false));
-
-    function recordBall(val) {
-      userManuallySelected = true;
-      currentMatch.lastBall = val;
-      currentMatch.oversStr = null;
+    function sendBallUpdate(val) {
+      historyStack.push({ ...state });
+      state.lastBall = val;
       if (val === 'W') {
-        if (currentMatch.wickets < 10) currentMatch.wickets += 1;
-        currentMatch.balls += 1;
+        if (state.wickets < 10) state.wickets += 1;
+        state.balls += 1;
       } else {
-        const r = parseInt(val, 10) || 0;
-        currentMatch.runs += r;
-        currentMatch.balls += 1;
+        state.runs += parseInt(val, 10) || 0;
+        state.balls += 1;
       }
-      renderScoreboard();
+      applyStateToUI();
+      publishState();
     }
 
-    function setBgMode(cls) {
-      document.body.className = cls;
+    function sendExtraRun(type) {
+      historyStack.push({ ...state });
+      state.runs += 1;
+      state.lastBall = type;
+      applyStateToUI();
+      publishState();
     }
 
-    centerSettingsBtn.addEventListener('click', () => {
+    function undoLastBall() {
+      if (historyStack.length > 0) {
+        state = historyStack.pop();
+        applyStateToUI();
+        publishState();
+      }
+    }
+
+    function updateBottomText() {
+      const txt = document.getElementById('customStatusInput').value.trim();
+      if (txt) {
+        historyStack.push({ ...state });
+        state.bottomText = txt.toUpperCase();
+        applyStateToUI();
+        publishState();
+      }
+    }
+
+    function changeBgMode(mode) {
+      state.bgMode = mode;
+      applyStateToUI();
+      publishState();
+    }
+
+    // Show/Hide Control Panel
+    const controlPanel = document.getElementById('controlPanel');
+    if (urlParams.get('control') === '1') {
+      document.body.classList.add('control-mode');
+      controlPanel.classList.add('open');
+    }
+
+    document.getElementById('centerSettingsBtn').addEventListener('click', () => {
       unlockAudioEngine();
-      settingsModal.classList.add('open');
-      updateGeneratedUrlPreview();
+      document.body.classList.add('control-mode');
+      controlPanel.classList.add('open');
     });
 
-    closeModalBtn.addEventListener('click', () => {
-      settingsModal.classList.remove('open');
+    document.getElementById('closePanelBtn').addEventListener('click', () => {
+      document.body.classList.remove('control-mode');
+      document.body.className = state.bgMode || 'bg-transparent';
+      controlPanel.classList.remove('open');
     });
+
+    // AI Comment Reader (Reads Name + Comment, No Beep)
+    const DEMO_COMMENTS = [
+      { author: 'Arjun Menon', text: 'What a brilliant shot! Straight down the ground!' },
+      { author: 'Rahul Nair', text: 'Great bowling change, building real pressure now.' },
+      { author: 'Vishnu Kumar', text: 'Super live stream bro, scoreboard updates are instant!' },
+      { author: 'Faisal Khan', text: 'Big over coming up, batters looking set.' }
+    ];
+    let demoIdx = 0;
+    let speechQueue = [];
+    let isSpeaking = false;
+    let currentAudioEl = null;
 
     function unlockAudioEngine() {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.resume();
-      }
+      if ('speechSynthesis' in window) window.speechSynthesis.resume();
     }
 
     function showToast(text) {
-      aiToast.textContent = text;
-      aiToast.style.display = 'block';
-      clearTimeout(aiToast._timer);
-      aiToast._timer = setTimeout(() => {
-        aiToast.style.display = 'none';
-      }, 5000);
+      const toast = document.getElementById('aiToast');
+      toast.textContent = text;
+      toast.style.display = 'block';
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { toast.style.display = 'none'; }, 5000);
     }
 
     function enqueueCommentSpeech(author, comment) {
       const cleanAuthor = (author || 'Viewer').replace(/[^\w\s\u0D00-\u0D7F]/g, '').trim();
       const cleanComment = (comment || '').trim();
       if (!cleanComment) return;
-
       const fullText = `${cleanAuthor} says: ${cleanComment}`;
       showToast(`🎙️ ${cleanAuthor}: ${cleanComment}`);
       speechQueue.push(fullText);
@@ -993,231 +972,161 @@
     function processSpeechQueue() {
       if (isSpeaking || speechQueue.length === 0) return;
       isSpeaking = true;
-      const textToSpeak = speechQueue.shift();
+      const text = speechQueue.shift();
       const statusEl = document.getElementById('voiceStatusText');
-      statusEl.textContent = 'Speaking: ' + textToSpeak.slice(0, 45) + '...';
+      statusEl.textContent = 'Speaking: ' + text.slice(0, 40) + '...';
 
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.cancel();
-          const utter = new SpeechSynthesisUtterance(textToSpeak);
+          const utter = new SpeechSynthesisUtterance(text);
           utter.lang = 'en-IN';
           utter.rate = 0.98;
-          utter.pitch = 1.0;
-
-          const voices = window.speechSynthesis.getVoices();
-          const preferred = voices.find(v => v.lang.includes('en-IN') || v.lang.includes('en-GB') || v.lang.includes('en-US'));
-          if (preferred) utter.voice = preferred;
-
-          let fallbackTriggered = false;
-          const safetyTimer = setTimeout(() => {
-            if (!window.speechSynthesis.speaking && !fallbackTriggered) {
-              fallbackTriggered = true;
-              playCloudTtsFallback(textToSpeak);
+          let fallback = false;
+          const timer = setTimeout(() => {
+            if (!window.speechSynthesis.speaking && !fallback) {
+              fallback = true;
+              playCloudTts(text);
             }
           }, 1200);
-
-          utter.onend = () => {
-            clearTimeout(safetyTimer);
-            isSpeaking = false;
-            statusEl.textContent = 'Voice Engine: Ready';
-            processSpeechQueue();
-          };
-
-          utter.onerror = () => {
-            clearTimeout(safetyTimer);
-            if (!fallbackTriggered) {
-              fallbackTriggered = true;
-              playCloudTtsFallback(textToSpeak);
-            }
-          };
-
+          utter.onend = () => { clearTimeout(timer); isSpeaking = false; statusEl.textContent = 'Voice Engine: Ready'; processSpeechQueue(); };
+          utter.onerror = () => { clearTimeout(timer); if (!fallback) { fallback = true; playCloudTts(text); } };
           window.speechSynthesis.speak(utter);
           return;
-        } catch (e) {
-          playCloudTtsFallback(textToSpeak);
-          return;
-        }
+        } catch (e) {}
       }
-
-      playCloudTtsFallback(textToSpeak);
+      playCloudTts(text);
     }
 
-    function playCloudTtsFallback(text) {
-      const statusEl = document.getElementById('voiceStatusText');
+    function playCloudTts(text) {
       try {
-        if (currentAudioEl) {
-          currentAudioEl.pause();
-          currentAudioEl = null;
-        }
-        const encoded = encodeURIComponent(text.slice(0, 180));
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=en&client=tw-ob`;
+        if (currentAudioEl) currentAudioEl.pause();
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text.slice(0, 180))}&tl=en&client=tw-ob`;
         const audio = new Audio(url);
         currentAudioEl = audio;
-        audio.onended = () => {
-          isSpeaking = false;
-          statusEl.textContent = 'Voice Engine: Ready';
-          processSpeechQueue();
-        };
-        audio.onerror = () => {
-          isSpeaking = false;
-          statusEl.textContent = 'Voice Engine: Check Device Media Volume';
-          processSpeechQueue();
-        };
-        audio.play().catch(() => {
-          isSpeaking = false;
-          statusEl.textContent = 'Tap screen once to allow browser audio';
-        });
-      } catch (err) {
-        isSpeaking = false;
-        processSpeechQueue();
-      }
+        audio.onended = () => { isSpeaking = false; processSpeechQueue(); };
+        audio.onerror = () => { isSpeaking = false; processSpeechQueue(); };
+        audio.play().catch(() => { isSpeaking = false; });
+      } catch (e) { isSpeaking = false; }
     }
 
-    let demoInterval = null;
-    function setAiReaderState(enabled) {
-      aiReaderToggle.checked = enabled;
-      updateGeneratedUrlPreview();
-      if (enabled) {
-        aiDot.classList.add('ai-active');
-        readNextComment();
-        clearInterval(demoInterval);
-        demoInterval = setInterval(() => {
-          if (!ytLiveChatId) readNextComment();
-        }, 12000);
-      } else {
-        aiDot.classList.remove('ai-active');
-        clearInterval(demoInterval);
-        speechQueue = [];
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        if (currentAudioEl) currentAudioEl.pause();
-        isSpeaking = false;
-      }
-    }
-
-    aiReaderToggle.addEventListener('change', (e) => {
+    let demoTimer = null;
+    document.getElementById('aiReaderToggle').addEventListener('change', (e) => {
       unlockAudioEngine();
-      setAiReaderState(e.target.checked);
+      state.aiEnabled = e.target.checked;
+      applyStateToUI();
+      publishState();
+      clearInterval(demoTimer);
+      if (state.aiEnabled) {
+        readNextDemo();
+        demoTimer = setInterval(() => { if (!ytLiveChatId) readNextDemo(); }, 12000);
+      }
     });
 
-    function readNextComment() {
-      const item = DEMO_COMMENTS[demoIndex % DEMO_COMMENTS.length];
-      demoIndex++;
+    function readNextDemo() {
+      const item = DEMO_COMMENTS[demoIdx % DEMO_COMMENTS.length];
+      demoIdx++;
       enqueueCommentSpeech(item.author, item.text);
+      if (mqttClient && mqttClient.connected) {
+        mqttClient.publish(MQTT_TOPIC, JSON.stringify({ type: 'SPEAK_COMMENT', author: item.author, text: item.text }));
+      }
     }
 
     document.getElementById('testVoiceBtn').addEventListener('click', () => {
       unlockAudioEngine();
-      enqueueCommentSpeech('Gopakumar', 'Welcome to the live cricket stream! Scoreboard and AI voice are working clearly.');
+      enqueueCommentSpeech('Gopakumar', 'Live cricket stream and remote scoreboard sync are working!');
+      if (mqttClient && mqttClient.connected) {
+        mqttClient.publish(MQTT_TOPIC, JSON.stringify({ type: 'SPEAK_COMMENT', author: 'Gopakumar', text: 'Live cricket stream and remote scoreboard sync are working!' }));
+      }
     });
 
     document.getElementById('readNextDemoBtn').addEventListener('click', () => {
       unlockAudioEngine();
-      readNextComment();
+      readNextDemo();
     });
+
+    // YouTube Live Chat API
+    let ytLiveChatId = null;
+    let ytNextPageToken = null;
+    let ytPollTimer = null;
+    let seenIds = new Set();
+
+    document.getElementById('ytApiKeyInput').value = localStorage.getItem('yt_api_key') || '';
+    document.getElementById('ytVideoIdInput').value = localStorage.getItem('yt_video_id') || '';
 
     function extractVideoId(input) {
       const val = (input || '').trim();
       const match = val.match(/(?:v=|\/live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-      if (match) return match[1];
-      if (val.length === 11) return val;
-      return val;
+      return match ? match[1] : val;
     }
 
-    async function connectYoutubeLiveChat(apiKey, rawVideo) {
-      const videoId = extractVideoId(rawVideo);
+    document.getElementById('connectYtBtn').addEventListener('click', async () => {
+      const key = document.getElementById('ytApiKeyInput').value.trim();
+      const rawVid = document.getElementById('ytVideoIdInput').value.trim();
+      const vid = extractVideoId(rawVid);
       const statusEl = document.getElementById('ytChatStatus');
 
-      localStorage.setItem('yt_api_key', apiKey);
-      localStorage.setItem('yt_video_id', rawVideo);
-      updateGeneratedUrlPreview();
+      localStorage.setItem('yt_api_key', key);
+      localStorage.setItem('yt_video_id', rawVid);
 
-      if (!apiKey || !videoId) {
-        statusEl.textContent = 'Please enter both YouTube API Key and Live Video ID.';
+      if (!key || !vid) {
+        statusEl.textContent = 'Enter both YouTube API Key and Live Video ID.';
         return;
       }
 
       statusEl.textContent = 'Connecting to YouTube Live Chat...';
       try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${apiKey}&_t=${Date.now()}`, {
-          cache: 'no-store'
-        });
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${vid}&key=${key}`);
         const data = await res.json();
         const chatId = data.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
-
         if (!chatId) {
-          statusEl.textContent = 'Error: Active Live Chat not found. Check Video ID & API Key.';
+          statusEl.textContent = 'Active Live Chat not found. Check Video ID & API Key.';
           return;
         }
-
         ytLiveChatId = chatId;
         ytNextPageToken = null;
-        seenMessageIds.clear();
-        statusEl.textContent = 'Connected! Auto-polling Live Comments every 6s.';
-        aiReaderToggle.checked = true;
-        aiDot.classList.add('ai-active');
-        startYoutubeChatPolling(apiKey);
+        seenIds.clear();
+        statusEl.textContent = 'Connected! Reading Live Viewer Names & Comments.';
+        state.aiEnabled = true;
+        applyStateToUI();
+        publishState();
+        clearInterval(ytPollTimer);
+        ytPollTimer = setInterval(async () => {
+          if (!ytLiveChatId || !state.aiEnabled) return;
+          try {
+            let u = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytLiveChatId}&part=snippet,authorDetails&key=${key}`;
+            if (ytNextPageToken) u += `&pageToken=${ytNextPageToken}`;
+            const r = await fetch(u);
+            const d = await r.json();
+            if (d.nextPageToken) ytNextPageToken = d.nextPageToken;
+            (d.items || []).forEach(msg => {
+              if (!seenIds.has(msg.id)) {
+                seenIds.add(msg.id);
+                const author = msg.authorDetails?.displayName || 'Viewer';
+                const text = msg.snippet?.displayMessage || '';
+                if (text) {
+                  enqueueCommentSpeech(author, text);
+                  if (mqttClient && mqttClient.connected) {
+                    mqttClient.publish(MQTT_TOPIC, JSON.stringify({ type: 'SPEAK_COMMENT', author, text }));
+                  }
+                }
+              }
+            });
+          } catch (e) {}
+        }, 6000);
       } catch (err) {
-        statusEl.textContent = 'Connection failed. Verify API Key permissions.';
+        statusEl.textContent = 'Connection failed. Check API Key.';
       }
-    }
-
-    document.getElementById('connectYtBtn').addEventListener('click', () => {
-      const apiKey = document.getElementById('ytApiKeyInput').value.trim();
-      const rawVideo = document.getElementById('ytVideoIdInput').value.trim();
-      connectYoutubeLiveChat(apiKey, rawVideo);
     });
 
-    function startYoutubeChatPolling(apiKey) {
-      clearInterval(ytPollTimer);
-      const poll = async () => {
-        if (!ytLiveChatId || !aiReaderToggle.checked) return;
-        try {
-          let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytLiveChatId}&part=snippet,authorDetails&key=${apiKey}&_t=${Date.now()}`;
-          if (ytNextPageToken) url += `&pageToken=${ytNextPageToken}`;
+    // Load saved local state & initialize
+    try {
+      const saved = JSON.parse(localStorage.getItem('cricket_overlay_state'));
+      if (saved) state = { ...state, ...saved };
+    } catch (e) {}
 
-          const res = await fetch(url, { cache: 'no-store' });
-          const data = await res.json();
-          if (data.nextPageToken) ytNextPageToken = data.nextPageToken;
-
-          (data.items || []).forEach(msg => {
-            if (!seenMessageIds.has(msg.id)) {
-              seenMessageIds.add(msg.id);
-              const author = msg.authorDetails?.displayName || 'Viewer';
-              const text = msg.snippet?.displayMessage || '';
-              if (text) enqueueCommentSpeech(author, text);
-            }
-          });
-        } catch (e) {}
-      };
-      poll();
-      ytPollTimer = setInterval(poll, 6000);
-    }
-
-    if (paramMatch) {
-      selectedMatchId = paramMatch.toLowerCase();
-      userManuallySelected = true;
-      const found = BUILTIN_MATCHES.find(m => m.id === selectedMatchId);
-      if (found) currentMatch = { ...found };
-    }
-
-    populateMatchDropdown();
-    renderScoreboard();
-    fetchEspnMatches(false);
-
-    // Continuous 10-second live sync loop
-    setInterval(() => {
-      fetchEspnMatches(true);
-    }, 10000);
-
-    if (paramSettings === '1') {
-      settingsModal.classList.add('open');
-    }
-    if (initialApiKey && initialVideoId) {
-      connectYoutubeLiveChat(initialApiKey, initialVideoId);
-    } else if (paramAi === '1') {
-      setAiReaderState(true);
-    }
+    applyStateToUI();
+    initCloudSync();
   </script>
 </body>
 </html>
