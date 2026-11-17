@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Live Cricket Broadcast Overlay</title>
   <style>
     * {
@@ -161,6 +164,24 @@
     .ball-value.is-four { color: #38bdf8; }
     .ball-value.is-six { color: #facc15; }
     .ball-value.is-wicket { color: #ef4444; }
+
+    /* Live Pulse Indicator */
+    .live-pulse-dot {
+      position: absolute;
+      top: 5px;
+      left: 8px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: pulseAnim 1.5s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(1.3); }
+      100% { opacity: 1; transform: scale(1); }
+    }
 
     .settings-hint-dot {
       position: absolute;
@@ -467,6 +488,7 @@
       </div>
 
       <div class="center-ball-box" id="centerSettingsBtn" title="Tap for Settings">
+        <div class="live-pulse-dot" title="Auto-Refresh Active (Every 15s)"></div>
         <div class="settings-hint-dot" id="aiDot"></div>
         <div class="ball-value" id="lastBallText">2</div>
       </div>
@@ -492,7 +514,7 @@
   <div class="modal-backdrop" id="settingsModal">
     <div class="settings-card">
       <div class="modal-header">
-        <h3>⚙️ Live Cricket & AI Settings</h3>
+        <h3>⚙️ Live Cricket & AI Settings (Auto-Refresh: 15s)</h3>
         <button class="close-btn" id="closeModalBtn">✕ Close</button>
       </div>
 
@@ -502,7 +524,7 @@
           <select id="matchSelectBox"></select>
           <button class="btn btn-amber" id="refreshEspnBtn" title="Refresh ESPN Live Feed">🔄</button>
         </div>
-        <div class="status-note" id="espnStatusText">Ready: ESPN Live + All Teams Loaded</div>
+        <div class="status-note" id="espnStatusText">Auto-Refresh ON: Checking ESPN every 15 seconds...</div>
       </div>
 
       <div class="form-group">
@@ -716,6 +738,7 @@
     ];
 
     let allMatches = [...BUILTIN_MATCHES];
+    let selectedMatchId = 'sl-pak';
     let currentMatch = { ...BUILTIN_MATCHES[0] };
 
     const DEMO_COMMENTS = [
@@ -742,7 +765,6 @@
     const aiDot = document.getElementById('aiDot');
     const aiToast = document.getElementById('aiToast');
 
-    // Parse URL Parameters for PRISM Live Zero-Touch Configuration
     const urlParams = new URLSearchParams(window.location.search);
     const paramSettings = urlParams.get('settings');
     const paramKey = urlParams.get('key');
@@ -766,7 +788,7 @@
       const vid = extractVideoId(document.getElementById('ytVideoIdInput').value.trim());
       const aiOn = aiReaderToggle.checked ? '1' : '0';
       const p = new URLSearchParams();
-      if (currentMatch && currentMatch.id) p.set('match', currentMatch.id);
+      if (selectedMatchId) p.set('match', selectedMatchId);
       if (key) p.set('key', key);
       if (vid) p.set('vid', vid);
       if (aiOn === '1') p.set('ai', '1');
@@ -787,7 +809,7 @@
       document.getElementById('batTeamName').textContent = currentMatch.batTeam;
       document.getElementById('wingLeft').style.background = currentMatch.batBg;
 
-      const oversFormatted = Math.floor(currentMatch.balls / 6) + '.' + (currentMatch.balls % 6);
+      const oversFormatted = currentMatch.oversStr || (Math.floor(currentMatch.balls / 6) + '.' + (currentMatch.balls % 6));
       document.getElementById('batScore').textContent = `${currentMatch.runs}-${currentMatch.wickets}`;
       document.getElementById('batOvers').textContent = oversFormatted;
 
@@ -803,7 +825,7 @@
       document.getElementById('bowlStatusText').textContent = currentMatch.bowlStatus;
       document.getElementById('matchStatusBar').textContent = currentMatch.bottomText;
 
-      const crr = currentMatch.balls > 0 ? ((currentMatch.runs / currentMatch.balls) * 6).toFixed(2) : '0.00';
+      const crr = currentMatch.crrStr || (currentMatch.balls > 0 ? ((currentMatch.runs / currentMatch.balls) * 6).toFixed(2) : '0.00');
       document.getElementById('crrValue').textContent = crr;
 
       setFlagBadge('batFlag', currentMatch.batCode, currentMatch.batTeam);
@@ -823,28 +845,33 @@
 
     function populateMatchDropdown() {
       matchSelectBox.innerHTML = '';
-      allMatches.forEach((m, idx) => {
+      allMatches.forEach((m) => {
         const opt = document.createElement('option');
-        opt.value = idx;
+        opt.value = m.id;
         opt.textContent = m.label;
-        if (m.id === currentMatch.id) opt.selected = true;
+        if (m.id === selectedMatchId) opt.selected = true;
         matchSelectBox.appendChild(opt);
       });
     }
 
     matchSelectBox.addEventListener('change', (e) => {
-      const selected = allMatches[parseInt(e.target.value, 10)];
+      selectedMatchId = e.target.value;
+      const selected = allMatches.find(m => m.id === selectedMatchId);
       if (selected) {
         currentMatch = { ...selected };
         renderScoreboard();
       }
     });
 
-    async function fetchEspnMatches() {
+    // Auto-Refreshing ESPN Live Scoreboard Feed (Cache-busted every 15 seconds)
+    async function fetchEspnMatches(isAuto = false) {
       const statusEl = document.getElementById('espnStatusText');
-      statusEl.textContent = 'Fetching ESPN Live & Scheduled matches...';
+      if (!isAuto) statusEl.textContent = 'Refreshing live scores...';
       try {
-        const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel');
+        const cacheBuster = Date.now();
+        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel?_t=${cacheBuster}`, {
+          cache: 'no-store'
+        });
         const data = await res.json();
         const espnList = [];
 
@@ -858,28 +885,44 @@
 
               const comps = ev.competitions?.[0]?.competitors || [];
               if (comps.length >= 2) {
-                const t1 = comps[0];
-                const t2 = comps[1];
-                const name1 = (t1.team?.shortDisplayName || t1.team?.name || 'TEAM 1').toUpperCase();
-                const name2 = (t2.team?.shortDisplayName || t2.team?.name || 'TEAM 2').toUpperCase();
-                const scoreStr = t1.score || '0-0';
-                const parts = scoreStr.split('/');
-                const runs = parseInt(parts[0], 10) || 0;
-                const wkts = parseInt(parts[1], 10) || 0;
+                // Determine batting team (usually team with score or first team)
+                let bat = comps[0];
+                let bowl = comps[1];
+                if (comps[1].score && !comps[0].score) {
+                  bat = comps[1];
+                  bowl = comps[0];
+                }
+
+                const name1 = (bat.team?.shortDisplayName || bat.team?.name || 'TEAM 1').toUpperCase();
+                const name2 = (bowl.team?.shortDisplayName || bowl.team?.name || 'TEAM 2').toUpperCase();
+                const rawScore = (bat.score || '0/0').toString();
+                const scoreMatch = rawScore.match(/(\d+)[\/\-](\d+)/);
+                const runs = scoreMatch ? parseInt(scoreMatch[1], 10) : (parseInt(rawScore, 10) || 0);
+                const wkts = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;
+
+                // Extract overs if available in score string e.g., "145/3 (16.4 ov)"
+                const ovMatch = rawScore.match(/\(([\d\.]+)\s*ov/i);
+                const oversStr = ovMatch ? ovMatch[1] : null;
+                let balls = tag === 'LIVE' ? 60 : 0;
+                if (oversStr) {
+                  const ovParts = oversStr.split('.');
+                  balls = (parseInt(ovParts[0], 10) || 0) * 6 + (parseInt(ovParts[1], 10) || 0);
+                }
 
                 espnList.push({
                   id: 'espn-' + ev.id,
                   label: `${name1} vs ${name2} [${tag}]`,
                   statusTag: tag,
                   batTeam: name1,
-                  batCode: (t1.team?.abbreviation || name1.slice(0, 3)).toUpperCase(),
+                  batCode: (bat.team?.abbreviation || name1.slice(0, 3)).toUpperCase(),
                   batBg: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
                   runs: runs,
                   wickets: wkts,
-                  balls: tag === 'LIVE' ? 60 : 0,
+                  balls: balls,
+                  oversStr: oversStr,
                   lastBall: tag === 'LIVE' ? '•' : 'VS',
                   bowlTeam: name2,
-                  bowlCode: (t2.team?.abbreviation || name2.slice(0, 3)).toUpperCase(),
+                  bowlCode: (bowl.team?.abbreviation || name2.slice(0, 3)).toUpperCase(),
                   bowlBg: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)',
                   bowlStatus: tag === 'LIVE' ? 'BOWLING' : tag,
                   bottomText: (ev.status?.type?.detail || tag).toUpperCase()
@@ -891,24 +934,34 @@
 
         if (espnList.length > 0) {
           allMatches = [...espnList, ...BUILTIN_MATCHES];
+          // Auto-select first LIVE ESPN match if user hasn't picked a custom match
+          if (selectedMatchId === 'sl-pak' && espnList.some(m => m.statusTag === 'LIVE')) {
+            const firstLive = espnList.find(m => m.statusTag === 'LIVE');
+            selectedMatchId = firstLive.id;
+          }
+          const updatedSelected = allMatches.find(m => m.id === selectedMatchId);
+          if (updatedSelected) {
+            currentMatch = { ...updatedSelected };
+            renderScoreboard();
+          }
           populateMatchDropdown();
-          statusEl.textContent = `Loaded ${espnList.length} ESPN matches + IPL & International Teams!`;
+          const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          statusEl.textContent = `Auto-Updated at ${nowTime} (${espnList.length} Live/Scheduled matches)`;
         } else {
           allMatches = [...BUILTIN_MATCHES];
           populateMatchDropdown();
-          statusEl.textContent = 'Loaded all [LIVE] & [SCHEDULED] IPL & International matchups.';
+          statusEl.textContent = 'Auto-Refresh Active (Every 15s)';
         }
       } catch (err) {
-        allMatches = [...BUILTIN_MATCHES];
-        populateMatchDropdown();
-        statusEl.textContent = 'Loaded offline [LIVE] & [SCHEDULED] team matchups.';
+        statusEl.textContent = 'Auto-Refresh Active (Offline fallback mode)';
       }
     }
 
-    document.getElementById('refreshEspnBtn').addEventListener('click', fetchEspnMatches);
+    document.getElementById('refreshEspnBtn').addEventListener('click', () => fetchEspnMatches(false));
 
     function recordBall(val) {
       currentMatch.lastBall = val;
+      currentMatch.oversStr = null;
       if (val === 'W') {
         if (currentMatch.wickets < 10) currentMatch.wickets += 1;
         currentMatch.balls += 1;
@@ -1109,7 +1162,9 @@
 
       statusEl.textContent = 'Connecting to YouTube Live Chat...';
       try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${apiKey}`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${apiKey}&_t=${Date.now()}`, {
+          cache: 'no-store'
+        });
         const data = await res.json();
         const chatId = data.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
 
@@ -1121,7 +1176,7 @@
         ytLiveChatId = chatId;
         ytNextPageToken = null;
         seenMessageIds.clear();
-        statusEl.textContent = 'Connected! Reading Live Viewer Names & Comments.';
+        statusEl.textContent = 'Connected! Auto-polling Live Comments every 6s.';
         aiReaderToggle.checked = true;
         aiDot.classList.add('ai-active');
         startYoutubeChatPolling(apiKey);
@@ -1141,10 +1196,10 @@
       const poll = async () => {
         if (!ytLiveChatId || !aiReaderToggle.checked) return;
         try {
-          let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytLiveChatId}&part=snippet,authorDetails&key=${apiKey}`;
+          let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytLiveChatId}&part=snippet,authorDetails&key=${apiKey}&_t=${Date.now()}`;
           if (ytNextPageToken) url += `&pageToken=${ytNextPageToken}`;
 
-          const res = await fetch(url);
+          const res = await fetch(url, { cache: 'no-store' });
           const data = await res.json();
           if (data.nextPageToken) ytNextPageToken = data.nextPageToken;
 
@@ -1162,15 +1217,20 @@
       ytPollTimer = setInterval(poll, 6000);
     }
 
-    // Apply URL Parameters on Load
     if (paramMatch) {
-      const found = BUILTIN_MATCHES.find(m => m.id === paramMatch.toLowerCase());
+      selectedMatchId = paramMatch.toLowerCase();
+      const found = BUILTIN_MATCHES.find(m => m.id === selectedMatchId);
       if (found) currentMatch = { ...found };
     }
 
     populateMatchDropdown();
     renderScoreboard();
-    fetchEspnMatches();
+    fetchEspnMatches(false);
+
+    // Continuous 15-second auto-refresh timer for live scoreboard
+    setInterval(() => {
+      fetchEspnMatches(true);
+    }, 15000);
 
     if (paramSettings === '1') {
       settingsModal.classList.add('open');
