@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - PRISM Audio Fix</title>
+<title>Live Cricket Broadcast Overlay - Full Code</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -33,6 +33,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7)}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 
+/* Big Center Runs / Wicket Display */
 .center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
 .ball{color:#ffffff;font-size:44px;font-weight:900;line-height:0.95;text-shadow:0 3px 12px rgba(255,255,255,.4)}
 .ball.c0{color:#e5e7eb}
@@ -92,7 +93,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (PRISM Audio Fixed)</h3>
+    <h3>🎛️ Live Cricket Controller (Full Version)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
@@ -120,7 +121,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 3. Ball Control Pad -->
   <div class="grp">
-    <label>3. Manual Ball Pad (Optional Override)</label>
+    <label>3. Manual Ball Pad (Shows Big Runs 0, 1, 2, 3, 4, 6, W in Center!)</label>
     <div class="pad">
       <button onclick="addBall('0')">0</button>
       <button onclick="addBall('1')">1</button>
@@ -157,7 +158,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 6. Background Mode -->
   <div class="grp">
-    <label>6. Screen Background Mode</label>
+    <label>6. Screen Background Mode (Tap Transparent to Close Panel & Clear Screen)</label>
     <div class="row">
       <button id="btnBgTrans" class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent', true)">Transparent</button>
       <button id="btnBgGreen" class="btn btn-g" style="flex:1" onclick="setBg('bg-green', false)">Green Screen</button>
@@ -194,7 +195,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
       <button class="btn" onclick="hidePanel()">Hide Panel</button>
     </div>
-    <div class="note" id="soundStatusNote">Sound Engine: Ready (Enable Internal Audio in PRISM)</div>
+    <div class="note" id="soundStatusNote">Sound Engine: Ready (Tap overlay once in PRISM)</div>
   </div>
 </div>
 
@@ -284,7 +285,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v17_prismaudio';
+const TOPIC='cricket/live/kinggopan_v18_full';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -640,7 +641,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v17',JSON.stringify(st));
+  localStorage.setItem('ck_st_v18',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -714,16 +715,24 @@ const audioPlayer=document.getElementById('ttsAudioPlayer');
 
 function unlockSound(){
   if(soundUnlocked)return;
-  soundUnlocked=true;
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
     if(AC&&!audioCtx)audioCtx=new AC();
     if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+    if(audioCtx){
+      const buf=audioCtx.createBuffer(1,1,22050);
+      const src=audioCtx.createBufferSource();
+      src.buffer=buf;
+      src.connect(audioCtx.destination);
+      src.start(0);
+    }
     if('speechSynthesis' in window)window.speechSynthesis.resume();
     audioPlayer.src='data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-    audioPlayer.play().catch(()=>{});
+    audioPlayer.play().then(()=>{soundUnlocked=true;}).catch(()=>{});
   }catch(e){}
 }
+window.addEventListener('load',unlockSound);
+window.addEventListener('pointerdown',unlockSound);
 
 function speak(a,m){
   const cleanAuthor=(a||'Viewer').replace(/[^\w\s\u0D00-\u0D7F]/g,'').trim()||'Viewer';
@@ -757,7 +766,6 @@ async function runQ(){
     runQ();
   };
 
-  // Fallback 3: Native Web Speech API
   const tryWebSpeech=()=>{
     if('speechSynthesis' in window){
       try{
@@ -774,7 +782,6 @@ async function runQ(){
     finish();
   };
 
-  // Method 1: Fetch TTS audio via CORS proxy as Blob (Bypasses PRISM WebView Referer block!)
   const rawTts=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(txt.slice(0,170))}&tl=en&client=tw-ob`;
   const proxyTts=`https://api.allorigins.win/raw?url=${encodeURIComponent(rawTts)}`;
 
@@ -794,7 +801,6 @@ async function runQ(){
     }
   }catch(e){}
 
-  // Method 2: Direct TTS URL fallback
   try{
     audioPlayer.pause();
     audioPlayer.src=rawTts;
@@ -868,7 +874,7 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v17'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v18'));if(s)st={...st,...s};}catch(e){}
 
 const initKey=qp.get('key')||localStorage.getItem('yt_api_key')||'';
 const initVid=qp.get('vid')||localStorage.getItem('yt_video_id')||'';
