@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Clean API & Quota Saver v25</title>
+<title>Live Cricket Broadcast Overlay - Live & Upcoming All World + Domestic Teams</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -30,7 +30,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .overs-badge.rem{color:#38bdf8;border-color:rgba(56,189,248,.4)}
 .bowl-lbl{color:#fff;font-size:20px;font-weight:900;text-shadow:2px 2px 4px rgba(0,0,0,.85);text-transform:uppercase;line-height:1.05}
 
-.flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7)}
+.flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7);letter-spacing:.3px}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 
 .center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
@@ -81,7 +81,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 @media(max-width:600px){
   .main{height:72px}.score{font-size:19px}.overs-badge{font-size:9px;padding:1px 5px}.bowl-lbl{font-size:15px}
-  .flag{width:40px;height:40px;font-size:11px}.center-box{width:82px}.ball{font-size:34px}.ball.c4,.ball.c6,.ball.cW{font-size:36px}.pill{font-size:9px;padding:1px 7px}
+  .flag{width:40px;height:40px;font-size:10px}.center-box{width:82px}.ball{font-size:34px}.ball.c4,.ball.c6,.ball.cW{font-size:36px}.pill{font-size:9px;padding:1px 7px}
 }
 </style>
 </head>
@@ -94,24 +94,24 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <button class="btn btn-r" style="padding:6px 12px;font-size:12px" onclick="hidePanel()">✖ Hide</button>
   </div>
 
-  <!-- 1. Select Match / Teams -->
+  <!-- 1. Select LIVE & UPCOMING Match / All World + Domestic Teams -->
   <div class="grp">
-    <label>1. Select Match / Teams (Zero-Glitch Multi-Device Sync)</label>
+    <label>1. Live & Upcoming Matches ONLY (All World + Domestic Teams)</label>
     <div class="row">
       <select id="matchSel"></select>
       <button class="btn btn-a" onclick="unlockAndRefresh()" title="Unlock & Force Live Refresh">🔄 Live</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Active Controller: Syncing cleanly without flicker</div>
+    <div class="note" id="espnNote">Showing ONLY Live & Upcoming Matches (Completed games hidden)</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
   <div class="grp">
-    <label>2. Custom Team Names & Wing Colors</label>
+    <label>2. Custom Team Names (Any World or Domestic Team) & Wing Colors</label>
     <div class="row">
-      <input type="text" id="custBat" placeholder="e.g. INDIA / IND" oninput="liveTypeTeams()">
+      <input type="text" id="custBat" placeholder="e.g. INDIA / KERALA / CSK" oninput="liveTypeTeams()">
       <input type="color" id="col1" value="#d4a000" onchange="liveTypeTeams()">
-      <input type="text" id="custBowl" placeholder="e.g. PAKISTAN / PAK" oninput="liveTypeTeams()">
+      <input type="text" id="custBowl" placeholder="e.g. AUSTRALIA / MUMBAI / MI" oninput="liveTypeTeams()">
       <input type="color" id="col2" value="#046a38" onchange="liveTypeTeams()">
     </div>
   </div>
@@ -194,7 +194,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Fast Voice</button>
       <button class="btn btn-d" style="flex:1" onclick="nextDemo()">▶ Next Demo</button>
     </div>
-    <div class="note" id="soundStatusNote">Quota-Saver Active: Only Master Controller polls YouTube API</div>
+    <div class="note" id="soundStatusNote">Live & Upcoming Only: Completed matches are filtered out automatically</div>
   </div>
 </div>
 
@@ -206,76 +206,171 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
   <div class="main">
     <div class="wing-l" id="wL">
       <div class="team-col">
-        <div class="pill" id="batName">SRI LANKA</div>
-        <div class="score" id="batScore">73-3</div>
-        <div class="overs-badge" id="batOv">OVERS: 19.1</div>
+        <div class="pill" id="batName">INDIA</div>
+        <div class="score" id="batScore">0-0</div>
+        <div class="overs-badge" id="batOv">OVERS: 0.0</div>
       </div>
-      <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/lk.png"></div>
+      <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/in.png"></div>
     </div>
 
     <div class="center-box" onclick="togglePanel()" title="Tap to Open/Close Settings">
       <div class="dot-l" id="dotSync" title="Green = Live Sync"></div>
       <div class="dot-r" id="dotAI" title="Blue = AI Voice"></div>
-      <div class="ball c2" id="lastBall">5</div>
-      <div class="event-sub" id="eventSubTag">5 RUNS</div>
+      <div class="ball c0" id="lastBall">0</div>
+      <div class="event-sub" id="eventSubTag">DOT BALL</div>
     </div>
 
     <div class="wing-r" id="wR">
-      <div class="flag" id="bowlFlag"><img src="https://flagcdn.com/w160/pk.png"></div>
+      <div class="flag" id="bowlFlag"><img src="https://flagcdn.com/w160/au.png"></div>
       <div class="team-col right">
-        <div class="pill" id="bowlName">PAKISTAN</div>
-        <div class="bowl-lbl" id="rightMainText">325-0</div>
-        <div class="overs-badge rem" id="bowlRemOv">REM: 29.0 OV</div>
+        <div class="pill" id="bowlName">AUSTRALIA</div>
+        <div class="bowl-lbl" id="rightMainText">BOWLING</div>
+        <div class="overs-badge rem" id="bowlRemOv">REM: 20.0 OV</div>
       </div>
     </div>
   </div>
   <div class="bot-bar">
-    <div class="status" id="botTxt">SL NEED 253 RUNS IN 174 BALLS</div>
-    <div class="crr">CRR:<span id="crrTxt">3.48</span></div>
+    <div class="status" id="botTxt">SYNCING LIVE & UPCOMING MATCHES...</div>
+    <div class="crr">CRR:<span id="crrTxt">0.00</span></div>
   </div>
 </div>
 
 <script>
+// Complete World International Countries -> ISO Flag Codes
 const COUNTRY_ISO={
-  'INDIA':'in','IND':'in','IND-W':'in','IND-A':'in','INDIA A':'in','INDIA WOMEN':'in',
-  'AUSTRALIA':'au','AUS':'au','AUS-W':'au','AUS-A':'au',
-  'PAKISTAN':'pk','PAK':'pk','PAK-W':'pk','PAK-A':'pk',
-  'SRI LANKA':'lk','SL':'lk','SL-W':'lk','SL-A':'lk',
-  'ENGLAND':'gb-eng','ENG':'gb-eng','ENG-W':'gb-eng','ENG-A':'gb-eng',
-  'SOUTH AFRICA':'za','SA':'za','RSA':'za','SA-W':'za',
-  'NEW ZEALAND':'nz','NZ':'nz','NZ-W':'nz',
-  'BANGLADESH':'bd','BAN':'bd','BAN-W':'bd',
-  'AFGHANISTAN':'af','AFG':'af','AFG-W':'af',
-  'IRELAND':'ie','IRE':'ie','IRE-W':'ie',
-  'SCOTLAND':'gb-sct','SCO':'gb-sct',
-  'NETHERLANDS':'nl','NED':'nl',
-  'ZIMBABWE':'zw','ZIM':'zw',
-  'NEPAL':'np','NEP':'np',
-  'UAE':'ae','UNITED ARAB EMIRATES':'ae',
+  'INDIA':'in','IND':'in','IND-W':'in','IND-A':'in','INDIA A':'in','INDIA WOMEN':'in','INDIA U19':'in',
+  'AUSTRALIA':'au','AUS':'au','AUS-W':'au','AUS-A':'au','AUSTRALIA A':'au','AUSTRALIA WOMEN':'au',
+  'PAKISTAN':'pk','PAK':'pk','PAK-W':'pk','PAK-A':'pk','PAKISTAN A':'pk','PAKISTAN WOMEN':'pk',
+  'SRI LANKA':'lk','SL':'lk','SL-W':'lk','SL-A':'lk','SRI LANKA A':'lk','SRI LANKA WOMEN':'lk',
+  'ENGLAND':'gb-eng','ENG':'gb-eng','ENG-W':'gb-eng','ENG-A':'gb-eng','ENGLAND LIONS':'gb-eng','ENGLAND WOMEN':'gb-eng',
+  'SOUTH AFRICA':'za','SA':'za','RSA':'za','SA-W':'za','SA-A':'za','SOUTH AFRICA A':'za','SOUTH AFRICA WOMEN':'za',
+  'NEW ZEALAND':'nz','NZ':'nz','NZ-W':'nz','NZ-A':'nz','NEW ZEALAND A':'nz','NEW ZEALAND WOMEN':'nz',
+  'BANGLADESH':'bd','BAN':'bd','BAN-W':'bd','BAN-A':'bd','BANGLADESH A':'bd','BANGLADESH WOMEN':'bd',
+  'AFGHANISTAN':'af','AFG':'af','AFG-W':'af','AFG-A':'af','AFGHANISTAN A':'af',
+  'IRELAND':'ie','IRE':'ie','IRE-W':'ie','IRELAND WOLVES':'ie',
+  'SCOTLAND':'gb-sct','SCO':'gb-sct','SCO-W':'gb-sct',
+  'NETHERLANDS':'nl','NED':'nl','NED-W':'nl',
+  'ZIMBABWE':'zw','ZIM':'zw','ZIM-W':'zw','ZIM-A':'zw',
+  'NEPAL':'np','NEP':'np','NEP-W':'np',
+  'UAE':'ae','UNITED ARAB EMIRATES':'ae','UAE-W':'ae',
   'OMAN':'om','OMA':'om',
-  'USA':'us','UNITED STATES':'us',
-  'CANADA':'ca','CAN':'ca',
-  'NAMIBIA':'na','NAM':'na',
-  'WEST INDIES':'bb','WI':'bb','BARBADOS':'bb',
+  'USA':'us','UNITED STATES':'us','USA-W':'us',
+  'CANADA':'ca','CAN':'ca','CAN-W':'ca',
+  'NAMIBIA':'na','NAM':'na','NAM-W':'na',
+  'WEST INDIES':'bb','WI':'bb','WI-W':'bb','WI-A':'bb','BARBADOS':'bb',
   'JAMAICA':'jm','JAM':'jm',
-  'TRINIDAD':'tt','TKR':'tt',
+  'TRINIDAD':'tt','TRINIDAD & TOBAGO':'tt','TKR':'tt',
   'GUYANA':'gy','GAW':'gy',
   'HONG KONG':'hk','HK':'hk',
   'KENYA':'ke','KEN':'ke',
   'UGANDA':'ug','UGA':'ug',
-  'PAPUA NEW GUINEA':'pg','PNG':'pg'
+  'PAPUA NEW GUINEA':'pg','PNG':'pg',
+  'MALAYSIA':'my','MAL':'my',
+  'SINGAPORE':'sg','SIN':'sg',
+  'KUWAIT':'kw','KUW':'kw',
+  'QATAR':'qa','QAT':'qa',
+  'SAUDI ARABIA':'sa','KSA':'sa',
+  'BAHRAIN':'bh','BHR':'bh',
+  'ITALY':'it','ITA':'it',
+  'GERMANY':'de','GER':'de',
+  'JERSEY':'je','JER':'je',
+  'GUERNSEY':'gg','GUE':'gg',
+  'BERMUDA':'bm','BER':'bm',
+  'TANZANIA':'tz','TAN':'tz',
+  'NIGERIA':'ng','NGA':'ng',
+  'RWANDA':'rw','RWA':'rw',
+  'THAILAND':'th','THA':'th',
+  'JAPAN':'jp','JPN':'jp',
+  'CHINA':'cn','CHN':'cn',
+  'BHUTAN':'bt','BHU':'bt',
+  'MALDIVES':'mv','MDV':'mv',
+  'DENMARK':'dk','DEN':'dk',
+  'SPAIN':'es','ESP':'es',
+  'PORTUGAL':'pt','POR':'pt',
+  'FRANCE':'fr','FRA':'fr',
+  'AUSTRIA':'at','AUT':'at',
+  'BELGIUM':'be','BEL':'be',
+  'NORWAY':'no','NOR':'no',
+  'SWEDEN':'se','SWE':'se',
+  'FINLAND':'fi','FIN':'fi',
+  'ARGENTINA':'ar','ARG':'ar',
+  'BRAZIL':'br','BRA':'br',
+  'CHILE':'cl','CHI':'cl',
+  'MEXICO':'mx','MEX':'mx',
+  'VANUATU':'vu','VAN':'vu',
+  'FIJI':'fj','FIJ':'fj',
+  'SAMOA':'ws','SAM':'ws'
 };
 
+// Domestic & Franchise Team Badges (Short Code + Custom Club Colors)
+const DOMESTIC_BADGES={
+  // IPL
+  'CHENNAI SUPER KINGS':{code:'CSK',bg:'#eab308',fg:'#000'},'CSK':{code:'CSK',bg:'#eab308',fg:'#000'},
+  'MUMBAI INDIANS':{code:'MI',bg:'#1d4ed8',fg:'#fff'},'MI':{code:'MI',bg:'#1d4ed8',fg:'#fff'},
+  'ROYAL CHALLENGERS BENGALURU':{code:'RCB',bg:'#dc2626',fg:'#fff'},'RCB':{code:'RCB',bg:'#dc2626',fg:'#fff'},
+  'KOLKATA KNIGHT RIDERS':{code:'KKR',bg:'#581c87',fg:'#facc15'},'KKR':{code:'KKR',bg:'#581c87',fg:'#facc15'},
+  'SUNRISERS HYDERABAD':{code:'SRH',bg:'#ea580c',fg:'#fff'},'SRH':{code:'SRH',bg:'#ea580c',fg:'#fff'},
+  'RAJASTHAN ROYALS':{code:'RR',bg:'#db2777',fg:'#fff'},'RR':{code:'RR',bg:'#db2777',fg:'#fff'},
+  'DELHI CAPITALS':{code:'DC',bg:'#2563eb',fg:'#ef4444'},'DC':{code:'DC',bg:'#2563eb',fg:'#fff'},
+  'PUNJAB KINGS':{code:'PBKS',bg:'#b91c1c',fg:'#fde047'},'PBKS':{code:'PBKS',bg:'#b91c1c',fg:'#fff'},
+  'LUCKNOW SUPER GIANTS':{code:'LSG',bg:'#0284c7',fg:'#fff'},'LSG':{code:'LSG',bg:'#0284c7',fg:'#fff'},
+  'GUJARAT TITANS':{code:'GT',bg:'#1e293b',fg:'#facc15'},'GT':{code:'GT',bg:'#1e293b',fg:'#facc15'},
+  // Indian Domestic (Ranji / SMAT / Vijay Hazare)
+  'KERALA':{code:'KER',bg:'#15803d',fg:'#fff'},'MUMBAI':{code:'MUM',bg:'#1d4ed8',fg:'#fff'},
+  'KARNATAKA':{code:'KAR',bg:'#dc2626',fg:'#facc15'},'TAMIL NADU':{code:'TN',bg:'#7f1d1d',fg:'#fff'},
+  'DELHI':{code:'DEL',bg:'#1e40af',fg:'#fff'},'BENGAL':{code:'BEN',bg:'#0369a1',fg:'#fff'},
+  'SAURASHTRA':{code:'SAU',bg:'#ea580c',fg:'#fff'},'VIDARBHA':{code:'VID',bg:'#b45309',fg:'#fff'},
+  'PUNJAB':{code:'PUN',bg:'#dc2626',fg:'#fff'},'BARODA':{code:'BRD',bg:'#2563eb',fg:'#fff'},
+  'HARYANA':{code:'HAR',bg:'#047857',fg:'#fff'},'GUJARAT':{code:'GUJ',bg:'#0284c7',fg:'#fff'},
+  'MAHARASHTRA':{code:'MAH',bg:'#d97706',fg:'#fff'},'HYDERABAD':{code:'HYD',bg:'#ea580c',fg:'#fff'},
+  'ANDHRA':{code:'AND',bg:'#1d4ed8',fg:'#fff'},'MADHYA PRADESH':{code:'MP',bg:'#0f766e',fg:'#fff'},
+  'RAJASTHAN':{code:'RAJ',bg:'#be185d',fg:'#fff'},'UTTAR PRADESH':{code:'UP',bg:'#2563eb',fg:'#fff'},
+  'JHARKHAND':{code:'JHA',bg:'#15803d',fg:'#fff'},'ODISHA':{code:'ODI',bg:'#b91c1c',fg:'#fff'},
+  'ASSAM':{code:'ASM',bg:'#991b1b',fg:'#fff'},'RAILWAYS':{code:'RLY',bg:'#1e3a8a',fg:'#fff'},
+  'SERVICES':{code:'SER',bg:'#374151',fg:'#fff'},'CHANDIGARH':{code:'CHD',bg:'#0284c7',fg:'#fff'},
+  'GOA':{code:'GOA',bg:'#0d9488',fg:'#fff'},'HIMACHAL PRADESH':{code:'HP',bg:'#16a34a',fg:'#fff'},
+  'JAMMU & KASHMIR':{code:'JK',bg:'#1d4ed8',fg:'#fff'},'TRIPURA':{code:'TRI',bg:'#b45309',fg:'#fff'},
+  // BBL / PSL / SA20 / ILT20 / CPL
+  'SYDNEY SIXERS':{code:'SIX',bg:'#ec4899',fg:'#fff'},'SYDNEY THUNDER':{code:'THU',bg:'#65a30d',fg:'#fff'},
+  'MELBOURNE STARS':{code:'STA',bg:'#16a34a',fg:'#fff'},'MELBOURNE RENEGADES':{code:'REN',bg:'#dc2626',fg:'#fff'},
+  'PERTH SCORCHERS':{code:'SCO',bg:'#ea580c',fg:'#fff'},'BRISBANE HEAT':{code:'HEA',bg:'#0284c7',fg:'#fff'},
+  'ADELAIDE STRIKERS':{code:'STR',bg:'#2563eb',fg:'#fff'},'HOBART HURRICANES':{code:'HUR',bg:'#7e22ce',fg:'#fff'},
+  'LAHORE QALANDARS':{code:'LQ',bg:'#15803d',fg:'#fff'},'KARACHI KINGS':{code:'KK',bg:'#1d4ed8',fg:'#ef4444'},
+  'MULTAN SULTANS':{code:'MS',bg:'#0284c7',fg:'#fff'},'PESHAWAR ZALMI':{code:'PZ',bg:'#eab308',fg:'#000'},
+  'ISLAMABAD UNITED':{code:'IU',bg:'#dc2626',fg:'#fff'},'QUETTA GLADIATORS':{code:'QG',bg:'#581c87',fg:'#facc15'}
+};
+
+// All World International + Major Domestic Preset Templates (Live & Upcoming Only)
 const BUILTIN_TEAMS=[
-  {id:'auto-espn',lbl:'🔄 AUTO-SELECT LIVE ESPN MATCH [AUTO]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'',t:'SYNCING LIVE SCOREBOARD...'},
-  {id:'sl-pak',lbl:'SRI LANKA vs PAKISTAN - T20 [20 OV]',bN:'SRI LANKA',bC:'lk',c1:'#d4a000',r:66,w:5,b:74,totOv:20,lb:'2',fN:'PAKISTAN',fC:'pk',c2:'#046a38',oppSc:'',t:'PAK OPT TO BOWL'},
-  {id:'ind-aus-chase',lbl:'INDIA vs AUSTRALIA - T20I [CHASE]',bN:'INDIA',bC:'in',c1:'#0057b8',r:148,w:3,b:92,totOv:20,lb:'6',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'185-7',t:'INDIA NEED 38 RUNS IN 28 BALLS'},
-  {id:'ind-pak',lbl:'INDIA vs PAKISTAN - CUP [LIVE]',bN:'INDIA',bC:'in',c1:'#0057b8',r:112,w:2,b:70,totOv:20,lb:'4',fN:'PAKISTAN',fC:'pk',c2:'#046a38',oppSc:'',t:'INDIA OPT TO BAT'},
-  {id:'eng-sa-odi',lbl:'ENGLAND vs SOUTH AFRICA - ODI [50 OV]',bN:'ENGLAND',bC:'gb-eng',c1:'#1e40af',r:215,w:6,b:210,totOv:50,lb:'1',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',oppSc:'',t:'ENG OPT TO BAT'},
-  {id:'nz-ban',lbl:'NEW ZEALAND vs BANGLADESH - T20I',bN:'NEW ZEALAND',bC:'nz',c1:'#1f2937',r:94,w:2,b:62,totOv:20,lb:'2',fN:'BANGLADESH',fC:'bd',c2:'#065f46',oppSc:'',t:'NZ OPT TO BAT'},
-  {id:'wi-afg',lbl:'WEST INDIES vs AFGHANISTAN - T20I',bN:'WEST INDIES',bC:'bb',c1:'#7f1d1d',r:88,w:3,b:58,totOv:20,lb:'6',fN:'AFGHANISTAN',fC:'af',c2:'#1d4ed8',oppSc:'',t:'WI OPT TO BAT'},
-  {id:'csk-mi-chase',lbl:'CHENNAI (CSK) vs MUMBAI (MI) - IPL',bN:'CHENNAI',bC:'CSK',c1:'#eab308',r:156,w:4,b:98,totOv:20,lb:'4',fN:'MUMBAI',fC:'MI',c2:'#1d4ed8',oppSc:'192-6',t:'CSK NEED 37 RUNS IN 22 BALLS'},
-  {id:'rcb-kkr',lbl:'BENGALURU (RCB) vs KOLKATA (KKR) - IPL',bN:'BENGALURU',bC:'RCB',c1:'#dc2626',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KOLKATA',fC:'KKR',c2:'#581c87',oppSc:'',t:'TOSS AT 7:00 PM IST'}
+  {id:'auto-espn',lbl:'🔄 AUTO-SELECT LIVE / UPCOMING ESPN MATCH [AUTO]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'',t:'SYNCING LIVE & UPCOMING MATCHES...'},
+  // International World Teams
+  {id:'ind-aus',lbl:'🌍 INDIA vs AUSTRALIA [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'',t:'INDIA vs AUSTRALIA - LIVE'},
+  {id:'ind-pak',lbl:'🌍 INDIA vs PAKISTAN [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'PAKISTAN',fC:'pk',c2:'#046a38',oppSc:'',t:'INDIA vs PAKISTAN - LIVE'},
+  {id:'ind-eng',lbl:'🌍 INDIA vs ENGLAND [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'ENGLAND',fC:'gb-eng',c2:'#1e40af',oppSc:'',t:'INDIA vs ENGLAND - LIVE'},
+  {id:'ind-sa',lbl:'🌍 INDIA vs SOUTH AFRICA [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',oppSc:'',t:'INDIA vs SOUTH AFRICA - LIVE'},
+  {id:'ind-nz',lbl:'🌍 INDIA vs NEW ZEALAND [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'NEW ZEALAND',fC:'nz',c2:'#1f2937',oppSc:'',t:'INDIA vs NEW ZEALAND - LIVE'},
+  {id:'ind-sl',lbl:'🌍 INDIA vs SRI LANKA [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SRI LANKA',fC:'lk',c2:'#d4a000',oppSc:'',t:'INDIA vs SRI LANKA - LIVE'},
+  {id:'ind-ban',lbl:'🌍 INDIA vs BANGLADESH [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'BANGLADESH',fC:'bd',c2:'#065f46',oppSc:'',t:'INDIA vs BANGLADESH - LIVE'},
+  {id:'ind-afg',lbl:'🌍 INDIA vs AFGHANISTAN [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AFGHANISTAN',fC:'af',c2:'#1d4ed8',oppSc:'',t:'INDIA vs AFGHANISTAN - LIVE'},
+  {id:'ind-wi',lbl:'🌍 INDIA vs WEST INDIES [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'WEST INDIES',fC:'bb',c2:'#7f1d1d',oppSc:'',t:'INDIA vs WEST INDIES - LIVE'},
+  {id:'aus-eng',lbl:'🌍 AUSTRALIA vs ENGLAND [ASHES / ODI / T20]',bN:'AUSTRALIA',bC:'au',c1:'#eab308',r:0,w:0,b:0,totOv:20,lb:'0',fN:'ENGLAND',fC:'gb-eng',c2:'#1e40af',oppSc:'',t:'AUSTRALIA vs ENGLAND - LIVE'},
+  {id:'pak-sa',lbl:'🌍 PAKISTAN vs SOUTH AFRICA [INTERNATIONAL]',bN:'PAKISTAN',bC:'pk',c1:'#046a38',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',oppSc:'',t:'PAKISTAN vs SOUTH AFRICA - LIVE'},
+  {id:'nz-sl',lbl:'🌍 NEW ZEALAND vs SRI LANKA [INTERNATIONAL]',bN:'NEW ZEALAND',bC:'nz',c1:'#1f2937',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SRI LANKA',fC:'lk',c2:'#d4a000',oppSc:'',t:'NEW ZEALAND vs SRI LANKA - LIVE'},
+  {id:'ban-afg',lbl:'🌍 BANGLADESH vs AFGHANISTAN [INTERNATIONAL]',bN:'BANGLADESH',bC:'bd',c1:'#065f46',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AFGHANISTAN',fC:'af',c2:'#1d4ed8',oppSc:'',t:'BANGLADESH vs AFGHANISTAN - LIVE'},
+  {id:'ire-sco',lbl:'🌍 IRELAND vs SCOTLAND [ASSOCIATE / EUROPE]',bN:'IRELAND',bC:'ie',c1:'#16a34a',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SCOTLAND',fC:'gb-sct',c2:'#1e3a8a',oppSc:'',t:'IRELAND vs SCOTLAND - LIVE'},
+  {id:'ned-zim',lbl:'🌍 NETHERLANDS vs ZIMBABWE [INTERNATIONAL]',bN:'NETHERLANDS',bC:'nl',c1:'#ea580c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'ZIMBABWE',fC:'zw',c2:'#dc2626',oppSc:'',t:'NETHERLANDS vs ZIMBABWE - LIVE'},
+  {id:'nep-uae',lbl:'🌍 NEPAL vs UAE [ASIA / ASSOCIATE]',bN:'NEPAL',bC:'np',c1:'#dc2626',r:0,w:0,b:0,totOv:20,lb:'0',fN:'UAE',fC:'ae',c2:'#15803d',oppSc:'',t:'NEPAL vs UAE - LIVE'},
+  {id:'usa-can',lbl:'🌍 USA vs CANADA [AMERICAS]',bN:'USA',bC:'us',c1:'#1d4ed8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'CANADA',fC:'ca',c2:'#dc2626',oppSc:'',t:'USA vs CANADA - LIVE'},
+  {id:'nam-oma',lbl:'🌍 NAMIBIA vs OMAN [INTERNATIONAL]',bN:'NAMIBIA',bC:'na',c1:'#1e40af',r:0,w:0,b:0,totOv:20,lb:'0',fN:'OMAN',fC:'om',c2:'#b91c1c',oppSc:'',t:'NAMIBIA vs OMAN - LIVE'},
+  // Domestic & Franchise Leagues
+  {id:'dom-ker-mum',lbl:'🏆 KERALA vs MUMBAI [INDIAN DOMESTIC / RANJI]',bN:'KERALA',bC:'KER',c1:'#15803d',r:0,w:0,b:0,totOv:20,lb:'0',fN:'MUMBAI',fC:'MUM',c2:'#1d4ed8',oppSc:'',t:'KERALA vs MUMBAI - LIVE'},
+  {id:'dom-kar-tn',lbl:'🏆 KARNATAKA vs TAMIL NADU [INDIAN DOMESTIC]',bN:'KARNATAKA',bC:'KAR',c1:'#dc2626',r:0,w:0,b:0,totOv:20,lb:'0',fN:'TAMIL NADU',fC:'TN',c2:'#7f1d1d',oppSc:'',t:'KARNATAKA vs TAMIL NADU - LIVE'},
+  {id:'dom-del-ben',lbl:'🏆 DELHI vs BENGAL [INDIAN DOMESTIC]',bN:'DELHI',bC:'DEL',c1:'#1e40af',r:0,w:0,b:0,totOv:20,lb:'0',fN:'BENGAL',fC:'BEN',c2:'#0369a1',oppSc:'',t:'DELHI vs BENGAL - LIVE'},
+  {id:'ipl-csk-mi',lbl:'🏏 CHENNAI (CSK) vs MUMBAI (MI) [IPL]',bN:'CHENNAI',bC:'CSK',c1:'#eab308',r:0,w:0,b:0,totOv:20,lb:'0',fN:'MUMBAI',fC:'MI',c2:'#1d4ed8',oppSc:'',t:'CSK vs MI - LIVE'},
+  {id:'ipl-rcb-kkr',lbl:'🏏 BENGALURU (RCB) vs KOLKATA (KKR) [IPL]',bN:'BENGALURU',bC:'RCB',c1:'#dc2626',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KOLKATA',fC:'KKR',c2:'#581c87',oppSc:'',t:'RCB vs KKR - LIVE'},
+  {id:'ipl-srh-rr',lbl:'🏏 HYDERABAD (SRH) vs RAJASTHAN (RR) [IPL]',bN:'HYDERABAD',bC:'SRH',c1:'#ea580c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'RAJASTHAN',fC:'RR',c2:'#db2777',oppSc:'',t:'SRH vs RR - LIVE'},
+  {id:'bbl-six-sta',lbl:'🏏 SYDNEY SIXERS vs MELBOURNE STARS [BBL]',bN:'SYDNEY SIXERS',bC:'SIX',c1:'#ec4899',r:0,w:0,b:0,totOv:20,lb:'0',fN:'MELBOURNE STARS',fC:'STA',c2:'#16a34a',oppSc:'',t:'BBL LIVE MATCH'},
+  {id:'psl-lq-kk',lbl:'🏏 LAHORE QALANDARS vs KARACHI KINGS [PSL]',bN:'LAHORE QALANDARS',bC:'LQ',c1:'#15803d',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KARACHI KINGS',fC:'KK',c2:'#1d4ed8',oppSc:'',t:'PSL LIVE MATCH'}
 ];
 
 let allTeams=[...BUILTIN_TEAMS];
@@ -284,8 +379,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-// Brand new v25 MQTT channel so old exhausted API keys never overwrite your new key!
-const TOPIC='cricket/live/kinggopan_v25_freshapi';
+const TOPIC='cricket/live/kinggopan_v26_liveupcoming';
 let client=null;
 let panelOpen=isControlMode;
 let isMasterDevice=isControlMode;
@@ -301,6 +395,17 @@ function resolveCountryFlag(name,code){
     if(key.length>3&&n.includes(key))return COUNTRY_ISO[key];
   }
   if(c.length===2||c==='GB-ENG'||c==='GB-SCT')return c.toLowerCase();
+  return null;
+}
+
+function resolveDomesticBadge(name,code){
+  const n=(name||'').trim().toUpperCase();
+  const c=(code||'').trim().toUpperCase();
+  if(DOMESTIC_BADGES[n])return DOMESTIC_BADGES[n];
+  if(DOMESTIC_BADGES[c])return DOMESTIC_BADGES[c];
+  for(const key of Object.keys(DOMESTIC_BADGES)){
+    if(key.length>3&&n.includes(key))return DOMESTIC_BADGES[key];
+  }
   return null;
 }
 
@@ -365,11 +470,15 @@ function liveTypeTeams(){
   let c2=document.getElementById('col2').value;
   if(b){
     st.bN=b;
-    st.bC=resolveCountryFlag(b,b)||b.slice(0,3);
+    const domB=resolveDomesticBadge(b,b);
+    st.bC=resolveCountryFlag(b,b)||(domB?domB.code:b.slice(0,3));
+    if(domB&&c1==='#d4a000'){c1=domB.bg;document.getElementById('col1').value=c1;}
   }
   if(f){
     st.fN=f;
-    st.fC=resolveCountryFlag(f,f)||f.slice(0,3);
+    const domF=resolveDomesticBadge(f,f);
+    st.fC=resolveCountryFlag(f,f)||(domF?domF.code:f.slice(0,3));
+    if(domF&&c2==='#046a38'){c2=domF.bg;document.getElementById('col2').value=c2;}
   }
   st.id='custom-manual';
   st.c1=c1;st.c2=c2;st.manualLock=true;st.ts=Date.now();
@@ -437,26 +546,39 @@ async function fetchESPN(isAuto=true){
   }
 
   const noteEl=document.getElementById('espnNote');
-  if(!isAuto)noteEl.textContent='Refreshing Live Scoreboard...';
+  if(!isAuto)noteEl.textContent='Fetching Live & Upcoming Matches...';
+
+  // Fetch both international scoreboard and all world/domestic scorepanel feeds
+  let eventsMap=new Map();
   let d=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard');
-  let events=(d&&d.events)?d.events:[];
-  if(!events.length){
-    let sp=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel');
-    if(sp&&sp.scores)sp.scores.forEach(lg=>(lg.events||[]).forEach(ev=>events.push(ev)));
+  if(d&&d.events)d.events.forEach(ev=>eventsMap.set(ev.id,ev));
+
+  let sp=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel');
+  if(sp&&sp.scores){
+    sp.scores.forEach(lg=>(lg.events||[]).forEach(ev=>{
+      if(!eventsMap.has(ev.id))eventsMap.set(ev.id,ev);
+    }));
   }
+
+  let events=Array.from(eventsMap.values());
   if(!events.length)return;
 
   let list=[];
   events.forEach(ev=>{
-    let state=ev.status?.type?.state;
-    let tag=state==='in'?'LIVE':state==='post'?'RESULT':'SCHEDULED';
+    let state=(ev.status?.type?.state||'').toLowerCase();
+    // STRICT FILTER: Exclude completed/past matches ('post') completely! Keep ONLY 'in' (LIVE) and 'pre' (UPCOMING)!
+    if(state==='post'||ev.status?.type?.completed===true)return;
+
+    let isLive=(state==='in');
+    let tag=isLive?'LIVE':'UPCOMING';
     let comp=ev.competitions?.[0];
     let cs=comp?.competitors||[];
     if(cs.length>=2){
       const parseComp=(c)=>{
         let name=(c.team?.shortDisplayName||c.team?.name||'TEAM').toUpperCase();
         let abbr=(c.team?.abbreviation||name.slice(0,3)).toUpperCase();
-        let iso=resolveCountryFlag(name,abbr)||abbr;
+        let dom=resolveDomesticBadge(name,abbr);
+        let iso=resolveCountryFlag(name,abbr)||(dom?dom.code:abbr);
         let raw=String(c.score||'').trim();
         let runs=0,wkts=0,ovStr='',hasBatted=false,isBattingNow=false;
 
@@ -477,7 +599,7 @@ async function fetchESPN(isAuto=true){
           if(mOv)ovStr=mOv[1];
         }
         let balls=ovStr?oversToBalls(ovStr):0;
-        return {name,abbr,iso,runs,wkts,ovStr,balls,hasBatted,isBattingNow};
+        return {name,abbr,iso,dom,runs,wkts,ovStr,balls,hasBatted,isBattingNow};
       };
 
       let t0=parseComp(cs[0]),t1=parseComp(cs[1]);
@@ -499,7 +621,7 @@ async function fetchESPN(isAuto=true){
       let oppSc=bowl.hasBatted?`${bowl.runs}-${bowl.wkts}`:'';
       let statusDetail=(ev.status?.type?.shortDetail||ev.status?.type?.detail||tag).toUpperCase();
 
-      if(tag==='LIVE'&&bowl.hasBatted&&bowl.runs>0){
+      if(isLive&&bowl.hasBatted&&bowl.runs>0){
         let target=bowl.runs+1;
         let need=Math.max(0,target-bat.runs);
         let remB=Math.max(0,(totOv*6)-bat.balls);
@@ -513,33 +635,42 @@ async function fetchESPN(isAuto=true){
         else if(bat.balls>st.b&&bat.runs===st.r)detectedBall='0';
       }
 
+      let c1=bat.dom?bat.dom.bg:'#1d4ed8';
+      let c2=bowl.dom?bowl.dom.bg:'#047857';
+
       list.push({
-        id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag}]`,isLive:(tag==='LIVE'),
-        bN:bat.name,bC:bat.iso,c1:'#1d4ed8',r:bat.runs,w:bat.wkts,b:bat.balls,totOv:totOv,
-        lb:detectedBall,fN:bowl.name,fC:bowl.iso,c2:'#047857',oppSc:oppSc,
+        id:'espn-'+ev.id,
+        lbl:`${isLive?'🔴 LIVE':'⏰ UPCOMING'} | ${bat.name} vs ${bowl.name}`,
+        isLive:isLive,
+        bN:bat.name,bC:bat.iso,c1:c1,r:bat.runs,w:bat.wkts,b:bat.balls,totOv:totOv,
+        lb:detectedBall,fN:bowl.name,fC:bowl.iso,c2:c2,oppSc:oppSc,
         t:statusDetail
       });
     }
   });
 
-  if(list.length){
-    allTeams=[BUILTIN_TEAMS[0],...list,...BUILTIN_TEAMS.slice(1)];
-    buildDropdown();
-    if(!st.manualLock){
-      let targetMatch=st.id?.startsWith('espn-')?list.find(x=>x.id===st.id):null;
-      if(!targetMatch)targetMatch=list.find(x=>x.isLive)||list[0];
-      if(targetMatch){
-        const changed=(st.r!==targetMatch.r||st.w!==targetMatch.w||st.b!==targetMatch.b||st.bN!==targetMatch.bN);
-        st={...st,...targetMatch,manualLock:false};
-        document.getElementById('custBat').value=st.bN;
-        document.getElementById('custBowl').value=st.fN;
-        render();
-        if(changed&&isMasterDevice)sync();
-      }
+  // Sort LIVE matches first, then UPCOMING matches
+  list.sort((a,b)=>(b.isLive?1:0)-(a.isLive?1:0));
+
+  allTeams=[BUILTIN_TEAMS[0],...list,...BUILTIN_TEAMS.slice(1)];
+  buildDropdown();
+
+  if(list.length&&!st.manualLock){
+    let targetMatch=st.id?.startsWith('espn-')?list.find(x=>x.id===st.id):null;
+    if(!targetMatch)targetMatch=list.find(x=>x.isLive)||list[0];
+    if(targetMatch){
+      const changed=(st.r!==targetMatch.r||st.w!==targetMatch.w||st.b!==targetMatch.b||st.bN!==targetMatch.bN||st.t!==targetMatch.t);
+      st={...st,...targetMatch,manualLock:false};
+      document.getElementById('custBat').value=st.bN;
+      document.getElementById('custBowl').value=st.fN;
+      render();
+      if(changed&&isMasterDevice)sync();
     }
-    let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    noteEl.textContent=st.manualLock?`Locked on ${st.bN} vs ${st.fN}`:`● Live Synced at ${now}`;
   }
+  let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  let liveCount=list.filter(x=>x.isLive).length;
+  let upCount=list.filter(x=>!x.isLive).length;
+  noteEl.textContent=`● ${liveCount} Live & ${upCount} Upcoming Matches Loaded (${now})`;
 }
 
 function getEventLabel(val){
@@ -568,8 +699,8 @@ function updatePrismUrlBox(){
     p.set('tot',st.totOv||20);
     if(st.oppSc)p.set('oppsc',st.oppSc);
   }
-  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v25')||'';
-  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v25')||'';
+  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v26')||'';
+  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v26')||'';
   if(savedKey)p.set('key',savedKey);
   if(savedVid)p.set('vid',extractVideoId(savedVid));
   p.set('bg',st.bg.replace('bg-',''));
@@ -650,13 +781,25 @@ function render(){
 function setFlag(id,c,n){
   let el=document.getElementById(id);
   let iso=resolveCountryFlag(n,c);
-  const targetKey=iso||((c||n).slice(0,4).toUpperCase());
+  let dom=resolveDomesticBadge(n,c);
+  const targetKey=iso?( 'flag:'+iso ):( dom?('dom:'+dom.code):('txt:'+(c||n).slice(0,4).toUpperCase()) );
   if(el.dataset.flagKey===targetKey)return;
   el.dataset.flagKey=targetKey;
+
   if(iso){
+    el.style.background='#111827';
+    el.style.color='#fff';
     el.innerHTML=`<img src="https://flagcdn.com/w160/${iso}.png" alt="${n}" onerror="this.style.display='none';this.parentNode.textContent='${n.slice(0,3)}'">`;
+  }else if(dom){
+    el.innerHTML='';
+    el.style.background=dom.bg;
+    el.style.color=dom.fg;
+    el.textContent=dom.code;
   }else{
-    el.textContent=targetKey;
+    el.innerHTML='';
+    el.style.background='#1e293b';
+    el.style.color='#fff';
+    el.textContent=(c||n).slice(0,4).toUpperCase();
   }
 }
 
@@ -666,7 +809,7 @@ function sync(){
   const v=document.getElementById('vidInp').value.trim();
   st.ytKey=k;
   st.ytVid=v;
-  localStorage.setItem('ck_st_v25',JSON.stringify(st));
+  localStorage.setItem('ck_st_v26',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -843,8 +986,8 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Fresh API channel and quota saver active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Fresh API channel and quota saver active!'}));
+  speak('Gopakumar','Live and upcoming world plus domestic matches loaded!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live and upcoming world plus domestic matches loaded!'}));
 }
 
 // ============================================================
@@ -863,8 +1006,7 @@ function clearSavedApi(){
   clearInterval(ytInt);
   ytChat=null;activeYtKey='';activeYtVid='';
   document.getElementById('apiKeyInp').value='';
-  localStorage.removeItem('yt_api_key_v25');
-  localStorage.removeItem('yt_api_key');
+  localStorage.removeItem('yt_api_key_v26');
   st.ytKey='';
   const note=document.getElementById('ytNote');
   note.style.color='#facc15';
@@ -877,8 +1019,8 @@ function saveAndPushApi(){
   isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  localStorage.setItem('yt_api_key_v25',k);
-  localStorage.setItem('yt_video_id_v25',v);
+  localStorage.setItem('yt_api_key_v26',k);
+  localStorage.setItem('yt_video_id_v26',v);
   st.ytKey=k;st.ytVid=v;
   updatePrismUrlBox();
   sync();
@@ -956,7 +1098,6 @@ async function connectYT(isSilent=false){
     clearInterval(ytInt);
 
     const pollChat=async()=>{
-      // Only Master Device polls YouTube API to save 50%+ quota! Secondary devices receive via MQTT SP!
       if(!ytChat||!st.ai||!isMasterDevice)return;
       try{
         let u=`https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytChat}&part=snippet,authorDetails&key=${k}`+(ytTok?`&pageToken=${ytTok}`:'');
@@ -993,7 +1134,7 @@ async function connectYT(isSilent=false){
     };
 
     await pollChat();
-    ytInt=setInterval(pollChat,7000); // 7-second interval keeps quota safe all day!
+    ytInt=setInterval(pollChat,7000);
   }catch(e){
     note.style.color='#f87171';
     note.textContent='❌ Network Error: ഇന്റർനെറ്റ് കണക്ഷൻ പരിശോധിക്കുക.';
@@ -1001,17 +1142,16 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v25'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v26'));if(s)st={...st,...s};}catch(e){}
 
-// Only load fresh v25 saved keys (ignores old exhausted v24 keys!)
-const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v25')||'';
-const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v25')||'';
-if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v25',initKey);st.ytKey=initKey;}
-if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v25',initVid);st.ytVid=initVid;}
+const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v26')||'';
+const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v26')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v26',initKey);st.ytKey=initKey;}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v26',initVid);st.ytVid=initVid;}
 
 if(qp.get('mid'))st.id=qp.get('mid');
-if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=resolveCountryFlag(st.bN,st.bN)||st.bN.slice(0,3);st.manualLock=true;}
-if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=resolveCountryFlag(st.fN,st.fN)||st.fN.slice(0,3);st.manualLock=true;}
+if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();const db=resolveDomesticBadge(st.bN,st.bN);st.bC=resolveCountryFlag(st.bN,st.bN)||(db?db.code:st.bN.slice(0,3));st.manualLock=true;}
+if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();const df=resolveDomesticBadge(st.fN,st.fN);st.fC=resolveCountryFlag(st.fN,st.fN)||(df?df.code:st.fN.slice(0,3));st.manualLock=true;}
 if(qp.get('c1'))st.c1='#'+qp.get('c1').replace('#','');
 if(qp.get('c2'))st.c2='#'+qp.get('c2').replace('#','');
 if(qp.get('tot'))st.totOv=parseInt(qp.get('tot'))||20;
@@ -1055,11 +1195,11 @@ if(typeof mqtt!=='undefined'){
         st={...st,...p.d};
         if(st.ytKey!==undefined){
           document.getElementById('apiKeyInp').value=st.ytKey;
-          localStorage.setItem('yt_api_key_v25',st.ytKey);
+          localStorage.setItem('yt_api_key_v26',st.ytKey);
         }
         if(st.ytVid!==undefined){
           document.getElementById('vidInp').value=st.ytVid;
-          localStorage.setItem('yt_video_id_v25',st.ytVid);
+          localStorage.setItem('yt_video_id_v26',st.ytVid);
         }
         document.getElementById('custBat').value=st.bN;
         document.getElementById('custBowl').value=st.fN;
