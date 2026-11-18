@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-transparent">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Country Flags & Auto Sync</title>
+<title>Live Cricket Broadcast Overlay - Persistent Lock & Transparent Fix</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
 html,body{width:100%;height:100%;background:transparent;font-family:'Arial Black',Arial,sans-serif;overflow:hidden}
-body.bg-transparent{background:transparent !important}
-body.bg-green{background:#00b140 !important}
-body.bg-dark{background:#0b0f19 !important}
+html.bg-transparent,body.bg-transparent{background:transparent !important;background-color:rgba(0,0,0,0) !important}
+html.bg-green,body.bg-green{background:#00b140 !important}
+html.bg-dark,body.bg-dark{background:#0b0f19 !important}
 body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 
 .overlay{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:98%;max-width:1120px;z-index:100;filter:drop-shadow(0 6px 14px rgba(0,0,0,.85))}
@@ -63,7 +63,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .toast{position:fixed;bottom:126px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Control Panel */
-.panel{display:none;max-width:540px;margin:10px auto;background:rgba(17,24,39,.97);color:#fff;border:1px solid #374151;border-radius:12px;padding:14px;font-family:sans-serif;box-shadow:0 10px 25px rgba(0,0,0,.85)}
+.panel{display:none;max-width:540px;margin:10px auto;background:rgba(17,24,39,.97);color:#fff;border:1px solid #374151;border-radius:12px;padding:14px;font-family:sans-serif;box-shadow:0 10px 25px rgba(0,0,0,.85);position:relative;z-index:200}
 .panel.open{display:block}
 .p-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid #1f2937;padding-bottom:8px}
 .p-head h3{font-size:15px;color:#facc15}
@@ -76,6 +76,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 .row{display:flex;gap:6px;align-items:center}
 .btn{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btn-g{background:#16a34a}.btn-a{background:#d97706}.btn-r{background:#dc2626}.btn-d{background:#374151}
+.btn-active{outline:2px solid #facc15;background:#0284c7 !important}
 .pad{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .pad button{background:#1f2937;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:12px 0;font-size:16px;font-weight:900;cursor:pointer}
 .pad button:active{background:#38bdf8;color:#000}
@@ -92,24 +93,24 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Country Flags + Auto Sync)</h3>
+    <h3>🎛️ Live Cricket Controller (Locked Settings & Flags)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
-  <!-- 1. Select Match / Teams -->
+  <!-- 1. Select Match / Teams (Stays Locked Until Changed!) -->
   <div class="grp">
-    <label>1. Select Match / Teams (Auto-Detects Country Flags & Innings)</label>
+    <label>1. Select Match / Teams (Stays Locked Until You Change It)</label>
     <div class="row">
       <select id="matchSel"></select>
       <button class="btn btn-a" onclick="fetchESPN(false)" title="Force Refresh Now">🔄</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Auto-Sync ON: Country Flags Enabled</div>
+    <div class="note" id="espnNote">Locked: Your selected match & API stay saved until changed</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
   <div class="grp">
-    <label>2. Team Names & Wing Colors (Type Country Name/Code for Flag)</label>
+    <label>2. Team Names & Wing Colors (Saved Automatically)</label>
     <div class="row">
       <input type="text" id="custBat" placeholder="e.g. INDIA / IND" oninput="liveTypeTeams()">
       <input type="color" id="col1" value="#d4a000" onchange="liveTypeTeams()">
@@ -155,32 +156,32 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <input type="text" id="tickerInp" placeholder="e.g. INDIA NEED 42 RUNS IN 24 BALLS" oninput="liveTypeTicker()">
   </div>
 
-  <!-- 6. Background Mode -->
+  <!-- 6. Background Mode (Fixed Transparent Button!) -->
   <div class="grp">
-    <label>6. Screen Background Mode</label>
+    <label>6. Screen Background Mode (Tap Transparent to Preview Clear Overlay)</label>
     <div class="row">
-      <button class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent')">Transparent</button>
-      <button class="btn btn-g" style="flex:1" onclick="setBg('bg-green')">Green Screen</button>
-      <button class="btn btn-d" style="flex:1" onclick="setBg('bg-dark')">Dark</button>
+      <button id="btnBgTrans" class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent', true)">Transparent</button>
+      <button id="btnBgGreen" class="btn btn-g" style="flex:1" onclick="setBg('bg-green', false)">Green Screen</button>
+      <button id="btnBgDark" class="btn btn-d" style="flex:1" onclick="setBg('bg-dark', false)">Dark</button>
     </div>
   </div>
 
   <!-- 7. Copy Direct PRISM Link -->
   <div class="grp">
-    <label>7. Copy Direct Link for PRISM Live</label>
+    <label>7. Copy Direct Link for PRISM Live (Includes All Locked Settings)</label>
     <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct PRISM Link</button>
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
-  <!-- 8. YouTube API & AI Voice -->
+  <!-- 8. Persistent YouTube API Key & Video ID -->
   <div class="grp">
-    <label>8. YouTube API Key & Live Video ID</label>
-    <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px">
+    <label>8. YouTube API Key & Live Video ID (Saved Permanently Until Changed)</label>
+    <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px" oninput="saveApiInputs()">
     <div class="row">
-      <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID">
-      <button class="btn btn-g" onclick="connectYT()">Connect</button>
+      <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID" oninput="saveApiInputs()">
+      <button class="btn btn-g" onclick="connectYT(false)">Connect</button>
     </div>
-    <div class="note" id="ytNote">Demo Mode Ready</div>
+    <div class="note" id="ytNote">Saved & Ready</div>
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:8px">
@@ -210,8 +211,8 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/lk.png"></div>
     </div>
 
-    <!-- Center Box: Big Runs Number -->
-    <div class="center-box" onclick="openPanel()">
+    <!-- Center Box: Big Runs Number (Tap here anytime to open/close settings) -->
+    <div class="center-box" onclick="togglePanel()" title="Tap to Open/Close Settings">
       <div class="dot-l" id="dotSync" title="Green = Live Sync"></div>
       <div class="dot-r" id="dotAI" title="Blue = AI Voice"></div>
       <div class="ball c2" id="lastBall">2</div>
@@ -235,7 +236,6 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 </div>
 
 <script>
-// Comprehensive Country Name & Abbreviation -> ISO Flag Code Map
 const COUNTRY_ISO={
   'INDIA':'in','IND':'in','IND-W':'in','IND-A':'in','INDIA A':'in','INDIA WOMEN':'in',
   'AUSTRALIA':'au','AUS':'au','AUS-W':'au','AUS-A':'au',
@@ -281,10 +281,10 @@ const BUILTIN_TEAMS=[
 let allTeams=[...BUILTIN_TEAMS];
 const qp=new URLSearchParams(location.search);
 const isControlMode=qp.get('control')==='1';
-let st={...BUILTIN_TEAMS[1],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
+let st={...BUILTIN_TEAMS[1],id:'sl-pak',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:true};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v13_flags';
+const TOPIC='cricket/live/kinggopan_v14_persist';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -337,6 +337,7 @@ document.getElementById('matchSel').onchange=e=>{
   if(f){
     hist.push({...st});
     let isEspn=val.startsWith('espn-');
+    // Keep chosen team locked so it never switches away until user changes it!
     st={...st,...f,id:val,manualLock:!isEspn,ts:Date.now()};
     document.getElementById('custBat').value=f.bN;
     document.getElementById('custBowl').value=f.fN;
@@ -359,6 +360,7 @@ function liveTypeTeams(){
     st.fN=f;
     st.fC=resolveCountryFlag(f,f)||f.slice(0,3);
   }
+  st.id='custom-locked';
   st.c1=c1;st.c2=c2;st.manualLock=true;st.ts=Date.now();
   st.t=`${st.bN} VS ${st.fN} - LIVE`;
   render();sync();
@@ -509,7 +511,7 @@ async function fetchESPN(isAuto=true){
       if(targetMatch){st={...st,...targetMatch,manualLock:false};render();sync();}
     }
     let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    noteEl.textContent=`Auto-Updated at ${now} (${st.totOv} Overs Format)`;
+    noteEl.textContent=st.manualLock?`Locked on ${st.bN} vs ${st.fN}`:`Auto-Updated at ${now}`;
   }
 }
 
@@ -538,6 +540,10 @@ function updatePrismUrlBox(){
     p.set('tot',st.totOv||20);
     if(st.oppSc)p.set('oppsc',st.oppSc);
   }
+  const savedKey=localStorage.getItem('yt_api_key')||'';
+  const savedVid=localStorage.getItem('yt_video_id')||'';
+  if(savedKey)p.set('key',savedKey);
+  if(savedVid)p.set('vid',extractVideoId(savedVid));
   p.set('bg',st.bg.replace('bg-',''));
   let full=`${base}?${p.toString()}`;
   document.getElementById('prismUrlBox').textContent=full;
@@ -600,11 +606,19 @@ function render(){
   if(document.activeElement!==document.getElementById('inpOvers'))document.getElementById('inpOvers').value=ovPlayed;
   if(document.activeElement!==document.getElementById('inpOppScore'))document.getElementById('inpOppScore').value=st.oppSc||'';
 
-  // Render Country Flags
   setFlag('batFlag',st.bC,st.bN);
   setFlag('bowlFlag',st.fC,st.fN);
 
-  document.body.className=(st.bg||'bg-transparent')+(panelOpen?' ctrl-open':'');
+  // Apply Background Class to BOTH <html> and <body> so Transparent works 100%!
+  const activeBg=st.bg||'bg-transparent';
+  document.documentElement.className=activeBg;
+  document.body.className=activeBg+(panelOpen?' ctrl-open':'');
+
+  // Highlight active background button
+  document.getElementById('btnBgTrans').classList.toggle('btn-active',activeBg==='bg-transparent');
+  document.getElementById('btnBgGreen').classList.toggle('btn-active',activeBg==='bg-green');
+  document.getElementById('btnBgDark').classList.toggle('btn-active',activeBg==='bg-dark');
+
   document.getElementById('aiChk').checked=st.ai;
   document.getElementById('dotAI').className='dot-r'+(st.ai?' on':'');
   updatePrismUrlBox();
@@ -622,7 +636,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v13',JSON.stringify(st));
+  localStorage.setItem('ck_st_v14',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -648,7 +662,15 @@ function addBall(v){
 
 function addExtra(v){hist.push({...st});st.r++;st.lb=String(v);st.manualLock=true;render();sync();}
 function undoBall(){if(hist.length){st=hist.pop();render();sync();}}
-function setBg(b){st.bg=b;render();sync();}
+
+function setBg(b, autoClose=false){
+  st.bg=b;
+  if(autoClose){
+    panelOpen=false;
+    document.getElementById('panel').classList.remove('open');
+  }
+  render();sync();
+}
 
 function swapTeams(){
   hist.push({...st});
@@ -665,6 +687,11 @@ function swapTeams(){
   render();sync();
 }
 
+function togglePanel(){
+  panelOpen=!panelOpen;
+  document.getElementById('panel').classList.toggle('open',panelOpen);
+  render();
+}
 function openPanel(){panelOpen=true;document.getElementById('panel').classList.add('open');render();}
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
@@ -696,23 +723,39 @@ function nextDemo(){
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Country flags and live cricket scoreboard are active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Country flags and live cricket scoreboard are active!'}));
+  speak('Gopakumar','Transparent mode and persistent settings are locked and working!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Transparent mode and persistent settings are locked and working!'}));
 }
 
-// YouTube Chat
+// Persistent YouTube API Key & Live Chat
 let ytChat=null,ytTok=null,ytInt=null,seen=new Set();
-async function connectYT(){
+
+function extractVideoId(input){
+  const val=(input||'').trim();
+  const m=val.match(/(?:v=|\/live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m?m[1]:val;
+}
+
+function saveApiInputs(){
+  const k=document.getElementById('apiKeyInp').value.trim();
+  const v=document.getElementById('vidInp').value.trim();
+  localStorage.setItem('yt_api_key',k);
+  localStorage.setItem('yt_video_id',v);
+  updatePrismUrlBox();
+}
+
+async function connectYT(isSilent=false){
   let k=document.getElementById('apiKeyInp').value.trim();
-  let v=document.getElementById('vidInp').value.trim();
-  let m=v.match(/(?:v=|\/live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);if(m)v=m[1];
+  let rawV=document.getElementById('vidInp').value.trim();
+  let v=extractVideoId(rawV);
+  saveApiInputs();
   if(!k||!v)return;
-  document.getElementById('ytNote').textContent='Connecting...';
+  if(!isSilent)document.getElementById('ytNote').textContent='Connecting & Locking API...';
   try{
     let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${v}&key=${k}`);
     let d=await r.json();ytChat=d.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
-    if(!ytChat){document.getElementById('ytNote').textContent='Live chat not found';return;}
-    document.getElementById('ytNote').textContent='Connected to YouTube Live!';
+    if(!ytChat){document.getElementById('ytNote').textContent='Live chat not found (Check Video ID)';return;}
+    document.getElementById('ytNote').textContent='● Connected & Locked Until Changed!';
     st.ai=true;render();sync();clearInterval(ytInt);
     ytInt=setInterval(async()=>{
       if(!ytChat||!st.ai)return;
@@ -723,8 +766,14 @@ async function connectYT(){
   }catch(e){document.getElementById('ytNote').textContent='Connection Error';}
 }
 
+// Restore saved state & saved API credentials permanently
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v13'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v14'));if(s)st={...st,...s};}catch(e){}
+
+const initKey=qp.get('key')||localStorage.getItem('yt_api_key')||'';
+const initVid=qp.get('vid')||localStorage.getItem('yt_video_id')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key',initKey);}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id',initVid);}
 
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=resolveCountryFlag(st.bN,st.bN)||st.bN.slice(0,3);st.manualLock=true;}
 if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=resolveCountryFlag(st.fN,st.fN)||st.fN.slice(0,3);st.manualLock=true;}
@@ -733,11 +782,22 @@ if(qp.get('c2'))st.c2='#'+qp.get('c2').replace('#','');
 if(qp.get('tot'))st.totOv=parseInt(qp.get('tot'))||20;
 if(qp.get('oppsc'))st.oppSc=qp.get('oppsc').toUpperCase();
 if(qp.get('bg'))st.bg='bg-'+qp.get('bg');
+
+document.getElementById('custBat').value=st.bN;
+document.getElementById('custBowl').value=st.fN;
+document.getElementById('col1').value=st.c1;
+document.getElementById('col2').value=st.c2;
+
 if(isControlMode){panelOpen=true;document.getElementById('panel').classList.add('open');}
 
 render();
 fetchESPN(false);
 setInterval(()=>fetchESPN(true),10000);
+
+// Auto-reconnect YouTube Live Chat if API Key & Video ID were previously saved
+if(initKey&&initVid){
+  connectYT(true);
+}
 
 if(typeof mqtt!=='undefined'){
   client=mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
