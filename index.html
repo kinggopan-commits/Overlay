@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Loud AI Voice & Auto Sync</title>
+<title>Live Cricket Broadcast Overlay - PRISM Audio Fix</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -33,7 +33,6 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7)}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* Big Center Runs / Wicket Display */
 .center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
 .ball{color:#ffffff;font-size:44px;font-weight:900;line-height:0.95;text-shadow:0 3px 12px rgba(255,255,255,.4)}
 .ball.c0{color:#e5e7eb}
@@ -93,7 +92,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Auto-Live + Loud AI Voice)</h3>
+    <h3>🎛️ Live Cricket Controller (PRISM Audio Fixed)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
@@ -185,7 +184,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
-    <span style="font-size:13px;font-weight:700">🎙️ AI Voice Reader (Loud Dual-Engine)</span>
+    <span style="font-size:13px;font-weight:700">🎙️ AI Voice Reader (PRISM WebView Audio)</span>
     <input type="checkbox" id="aiChk" style="width:20px;height:20px" onchange="toggleAI(this.checked)">
   </div>
 
@@ -195,18 +194,16 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
       <button class="btn" onclick="hidePanel()">Hide Panel</button>
     </div>
-    <div class="note" id="soundStatusNote">Sound Engine: Tap 'Test Voice Sound' to verify audio</div>
+    <div class="note" id="soundStatusNote">Sound Engine: Ready (Enable Internal Audio in PRISM)</div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-<!-- Hidden HTML5 Audio Player for Reliable Mobile & PRISM Voice Playback -->
-<audio id="ttsAudioPlayer" preload="auto"></audio>
+<audio id="ttsAudioPlayer" playsinline preload="auto"></audio>
 
 <div class="overlay">
   <div class="top-bar"></div>
   <div class="main">
-    <!-- Left Wing: Active Batting Team -->
     <div class="wing-l" id="wL">
       <div class="team-col">
         <div class="pill" id="batName">SRI LANKA</div>
@@ -216,7 +213,6 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/lk.png"></div>
     </div>
 
-    <!-- Center Box: Big Runs Number -->
     <div class="center-box" onclick="togglePanel()" title="Tap to Open/Close Settings">
       <div class="dot-l" id="dotSync" title="Green = Live Sync"></div>
       <div class="dot-r" id="dotAI" title="Blue = AI Voice"></div>
@@ -224,7 +220,6 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <div class="event-sub" id="eventSubTag">2 RUNS</div>
     </div>
 
-    <!-- Right Wing: Bowling Team / 1st Innings Score -->
     <div class="wing-r" id="wR">
       <div class="flag" id="bowlFlag"><img src="https://flagcdn.com/w160/pk.png"></div>
       <div class="team-col right">
@@ -289,7 +284,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v16_loudvoice';
+const TOPIC='cricket/live/kinggopan_v17_prismaudio';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -645,7 +640,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v16',JSON.stringify(st));
+  localStorage.setItem('ck_st_v17',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -707,23 +702,24 @@ function openPanel(){unlockSound();panelOpen=true;document.getElementById('panel
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // ============================================================
-// LOUD DUAL-ENGINE AI VOICE (MP3 Audio + Web Speech Fallback)
+// PRISM WEBVIEW + CHROME TRIPLE-FALLBACK VOICE ENGINE
 // ============================================================
 const DEMOS=[
   {a:'Arjun',m:'What a massive sixer!'},
   {a:'Rahul',m:'Brilliant wicket!'},
-  {a:'Vishnu',m:'Dot ball, building pressure!'},
-  {a:'Faisal',m:'Great batting partnership in the middle!'}
+  {a:'Vishnu',m:'Dot ball, building pressure!'}
 ];
-let dIdx=0,q=[],speaking=false,soundUnlocked=false;
+let dIdx=0,q=[],speaking=false,soundUnlocked=false,audioCtx=null;
 const audioPlayer=document.getElementById('ttsAudioPlayer');
 
 function unlockSound(){
   if(soundUnlocked)return;
   soundUnlocked=true;
   try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC&&!audioCtx)audioCtx=new AC();
+    if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
     if('speechSynthesis' in window)window.speechSynthesis.resume();
-    // Play silent tiny data URI to unlock HTML5 audio on Android/Chrome/WebView
     audioPlayer.src='data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
     audioPlayer.play().catch(()=>{});
   }catch(e){}
@@ -745,52 +741,72 @@ function speak(a,m){
   runQ();
 }
 
-function runQ(){
+async function runQ(){
   if(speaking||!q.length)return;
   speaking=true;
   let txt=q.shift();
   const statusNote=document.getElementById('soundStatusNote');
-  if(statusNote)statusNote.textContent='🔊 Speaking: '+txt.slice(0,38)+'...';
+  if(statusNote)statusNote.textContent='🔊 Reading: '+txt.slice(0,36)+'...';
 
-  // Engine 1: Try Reliable Cloud MP3 Audio first (Works in Android WebView & Chrome!)
-  const encoded=encodeURIComponent(txt.slice(0,180));
-  const ttsUrl=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=en&client=tw-ob`;
-
-  audioPlayer.pause();
-  audioPlayer.src=ttsUrl;
-  audioPlayer.volume=1.0;
-
-  let finished=false;
-  const finishStep=()=>{
-    if(finished)return;
-    finished=true;
+  let done=false;
+  const finish=()=>{
+    if(done)return;
+    done=true;
     speaking=false;
-    if(statusNote)statusNote.textContent='Sound Engine: Active & Ready';
+    if(statusNote)statusNote.textContent='Sound Engine: Active (PRISM Internal Audio)';
     runQ();
   };
 
-  audioPlayer.onended=finishStep;
-  audioPlayer.onerror=()=>{
-    // Engine 2: Fallback to Browser SpeechSynthesis
+  // Fallback 3: Native Web Speech API
+  const tryWebSpeech=()=>{
     if('speechSynthesis' in window){
       try{
         window.speechSynthesis.cancel();
         let u=new SpeechSynthesisUtterance(txt);
         u.lang='en-IN';
         u.volume=1.0;
-        u.rate=0.98;
-        u.onend=u.onerror=finishStep;
+        u.onend=u.onerror=finish;
         window.speechSynthesis.speak(u);
-        setTimeout(finishStep,6000);
+        setTimeout(finish,5500);
         return;
       }catch(e){}
     }
-    finishStep();
+    finish();
   };
 
-  audioPlayer.play().catch(()=>{
-    audioPlayer.onerror();
-  });
+  // Method 1: Fetch TTS audio via CORS proxy as Blob (Bypasses PRISM WebView Referer block!)
+  const rawTts=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(txt.slice(0,170))}&tl=en&client=tw-ob`;
+  const proxyTts=`https://api.allorigins.win/raw?url=${encodeURIComponent(rawTts)}`;
+
+  try{
+    const res=await fetch(proxyTts);
+    if(res.ok){
+      const blob=await res.blob();
+      const blobUrl=URL.createObjectURL(blob);
+      audioPlayer.pause();
+      audioPlayer.src=blobUrl;
+      audioPlayer.volume=1.0;
+      audioPlayer.onended=()=>{URL.revokeObjectURL(blobUrl);finish();};
+      audioPlayer.onerror=()=>{URL.revokeObjectURL(blobUrl);tryWebSpeech();};
+      await audioPlayer.play();
+      setTimeout(finish,7000);
+      return;
+    }
+  }catch(e){}
+
+  // Method 2: Direct TTS URL fallback
+  try{
+    audioPlayer.pause();
+    audioPlayer.src=rawTts;
+    audioPlayer.volume=1.0;
+    audioPlayer.onended=finish;
+    audioPlayer.onerror=tryWebSpeech;
+    await audioPlayer.play();
+    setTimeout(finish,7000);
+    return;
+  }catch(e){}
+
+  tryWebSpeech();
 }
 
 let dTimer=null;
@@ -807,8 +823,8 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Voice sound is now loud and clear!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Voice sound is now loud and clear!'}));
+  speak('Gopakumar','PRISM Live voice audio is now working!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'PRISM Live voice audio is now working!'}));
 }
 
 // Persistent YouTube API Key & Live Chat
@@ -852,7 +868,7 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v16'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v17'));if(s)st={...st,...s};}catch(e){}
 
 const initKey=qp.get('key')||localStorage.getItem('yt_api_key')||'';
 const initVid=qp.get('vid')||localStorage.getItem('yt_video_id')||'';
