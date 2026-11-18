@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Full Complete Code v24</title>
+<title>Live Cricket Broadcast Overlay - Clean API & Quota Saver v25</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -33,7 +33,6 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7)}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* Stable Zero-Glitch Center Box */
 .center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
 .ball{color:#ffffff;font-size:44px;font-weight:900;line-height:0.95;text-shadow:0 3px 12px rgba(255,255,255,.4)}
 .ball.c0{color:#e5e7eb}
@@ -59,7 +58,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 
 .toast{position:fixed;bottom:126px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Control Panel with Top Hide Button */
+/* Control Panel */
 .panel{display:none;max-width:540px;margin:10px auto;background:rgba(17,24,39,.97);color:#fff;border:1px solid #374151;border-radius:12px;padding:14px;font-family:sans-serif;box-shadow:0 10px 25px rgba(0,0,0,.85);position:relative;z-index:200}
 .panel.open{display:block}
 .p-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;border-bottom:1px solid #1f2937;padding-bottom:8px}
@@ -89,7 +88,6 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 <body class="bg-transparent" onclick="unlockSound()" ontouchstart="unlockSound()">
 
 <div class="panel" id="panel">
-  <!-- Top Header with Prominent Hide Panel Button -->
   <div class="p-head">
     <h3>🎛️ Live Controller</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
@@ -172,15 +170,18 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
-  <!-- 8. YouTube API Key & Video ID with Clear Diagnostic Messages -->
+  <!-- 8. YouTube API Key & Video ID with Clear Button -->
   <div class="grp">
-    <label>8. YouTube Data API v3 Key & Live Video ID (Auto-Syncs to Other Devices)</label>
-    <input type="text" id="apiKeyInp" placeholder="Paste YouTube Data API v3 Key (AIzaSy...)" style="margin-bottom:5px" oninput="saveAndPushApi()">
+    <label>8. YouTube Data API v3 Key & Live Video ID (Quota-Saver Mode)</label>
+    <div class="row" style="margin-bottom:5px">
+      <input type="text" id="apiKeyInp" placeholder="Paste New Project API Key (AIzaSy...)" oninput="saveAndPushApi()">
+      <button class="btn btn-r" onclick="clearSavedApi()" title="Clear Old API Key">🗑️ Clear</button>
+    </div>
     <div class="row">
       <input type="text" id="vidInp" placeholder="YouTube Live Video URL or 11-char ID" oninput="saveAndPushApi()">
       <button class="btn btn-g" onclick="connectYT(false)">Connect & Sync</button>
     </div>
-    <div class="note" id="ytNote">Ready: Paste Google Cloud YouTube Data API v3 Key (AIzaSy...) & Live Video URL</div>
+    <div class="note" id="ytNote">Ready: Paste New Google Cloud Project API Key & Live Video URL</div>
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
@@ -193,7 +194,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Fast Voice</button>
       <button class="btn btn-d" style="flex:1" onclick="nextDemo()">▶ Next Demo</button>
     </div>
-    <div class="note" id="soundStatusNote">Zero-Glitch Mode: Controller pushes updates, Display receives smoothly</div>
+    <div class="note" id="soundStatusNote">Quota-Saver Active: Only Master Controller polls YouTube API</div>
   </div>
 </div>
 
@@ -283,7 +284,8 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v24_complete';
+// Brand new v25 MQTT channel so old exhausted API keys never overwrite your new key!
+const TOPIC='cricket/live/kinggopan_v25_freshapi';
 let client=null;
 let panelOpen=isControlMode;
 let isMasterDevice=isControlMode;
@@ -566,8 +568,8 @@ function updatePrismUrlBox(){
     p.set('tot',st.totOv||20);
     if(st.oppSc)p.set('oppsc',st.oppSc);
   }
-  const savedKey=st.ytKey||localStorage.getItem('yt_api_key')||'';
-  const savedVid=st.ytVid||localStorage.getItem('yt_video_id')||'';
+  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v25')||'';
+  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v25')||'';
   if(savedKey)p.set('key',savedKey);
   if(savedVid)p.set('vid',extractVideoId(savedVid));
   p.set('bg',st.bg.replace('bg-',''));
@@ -580,7 +582,7 @@ function copyPrismUrl(){
   sync();
   let u=updatePrismUrlBox();
   if(navigator.clipboard)navigator.clipboard.writeText(u);
-  alert('Copied Direct Link (Includes your API Key, Video ID & Match):\n\n'+u);
+  alert('Copied Direct Link:\n\n'+u);
 }
 
 function makeGrad(hex){
@@ -660,11 +662,11 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  const k=document.getElementById('apiKeyInp').value.trim()||localStorage.getItem('yt_api_key')||st.ytKey||'';
-  const v=document.getElementById('vidInp').value.trim()||localStorage.getItem('yt_video_id')||st.ytVid||'';
-  if(k)st.ytKey=k;
-  if(v)st.ytVid=v;
-  localStorage.setItem('ck_st_v24',JSON.stringify(st));
+  const k=document.getElementById('apiKeyInp').value.trim();
+  const v=document.getElementById('vidInp').value.trim();
+  st.ytKey=k;
+  st.ytVid=v;
+  localStorage.setItem('ck_st_v25',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -841,12 +843,12 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','All systems are active and ready!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'All systems are active and ready!'}));
+  speak('Gopakumar','Fresh API channel and quota saver active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Fresh API channel and quota saver active!'}));
 }
 
 // ============================================================
-// YOUTUBE DATA API v3 LIVE CHAT WITH DETAILED DIAGNOSTICS
+// YOUTUBE DATA API v3 LIVE CHAT (QUOTA SAVER + CLEAR BUTTON)
 // ============================================================
 let ytChat=null,ytTok=null,ytInt=null,seen=new Set(),ytFirstBatchDone=false,activeYtKey='',activeYtVid='';
 
@@ -856,12 +858,27 @@ function extractVideoId(input){
   return m?m[1]:val;
 }
 
+function clearSavedApi(){
+  isMasterDevice=true;
+  clearInterval(ytInt);
+  ytChat=null;activeYtKey='';activeYtVid='';
+  document.getElementById('apiKeyInp').value='';
+  localStorage.removeItem('yt_api_key_v25');
+  localStorage.removeItem('yt_api_key');
+  st.ytKey='';
+  const note=document.getElementById('ytNote');
+  note.style.color='#facc15';
+  note.textContent='Cleared! Now paste your New Project API Key and tap Connect & Sync';
+  updatePrismUrlBox();
+  sync();
+}
+
 function saveAndPushApi(){
   isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  localStorage.setItem('yt_api_key',k);
-  localStorage.setItem('yt_video_id',v);
+  localStorage.setItem('yt_api_key_v25',k);
+  localStorage.setItem('yt_video_id_v25',v);
   st.ytKey=k;st.ytVid=v;
   updatePrismUrlBox();
   sync();
@@ -877,7 +894,7 @@ async function connectYT(isSilent=false){
   if(!k){
     if(!isSilent){
       note.style.color='#f87171';
-      note.textContent='⚠️ ദയവായി YouTube Data API v3 Key (AIzaSy...) നൽകുക';
+      note.textContent='⚠️ ദയവായി പുതിയ Google Cloud Project API Key (AIzaSy...) നൽകുക';
     }
     return;
   }
@@ -904,20 +921,22 @@ async function connectYT(isSilent=false){
       const reason=d.error.errors?.[0]?.reason||'';
       note.style.color='#f87171';
       if(reason==='quotaExceeded'){
-        note.textContent='❌ YouTube API Quota തീർന്നു! പുതിയ API Key ഉപയോഗിക്കുക.';
+        note.textContent='❌ ഈ പ്രോജക്റ്റിന്റെ Quota തീർന്നു! Google Cloud-ൽ NEW PROJECT ഉണ്ടാക്കി കീ എടുക്കുക.';
       }else if(reason==='keyInvalid'||d.error.code===400){
-        note.textContent='❌ API Key തെറ്റാണ്! Google Cloud YouTube Data API v3 Key നൽകുക.';
+        note.textContent='❌ API Key തെറ്റാണ്! കീ കോപ്പി ചെയ്തപ്പോൾ സ്പേസ് വന്നിട്ടുണ്ടോ എന്ന് നോക്കുക.';
       }else if(reason==='accessNotConfigured'||d.error.code===403){
         note.textContent='❌ Google Cloud-ൽ "YouTube Data API v3" Enable ചെയ്തിട്ടില്ല!';
       }else{
         note.textContent='❌ Error: '+(d.error.message||reason);
       }
+      ytChat=null;activeYtKey='';
       return;
     }
 
     if(!d.items||!d.items.length){
       note.style.color='#f87171';
       note.textContent='❌ ഈ Video ID കണ്ടെത്താനായില്ല. വീഡിയോ Public/Unlisted ആണോ എന്ന് നോക്കുക.';
+      ytChat=null;activeYtKey='';
       return;
     }
 
@@ -925,18 +944,20 @@ async function connectYT(isSilent=false){
     if(!ytChat){
       note.style.color='#f87171';
       note.textContent='❌ ഈ വീഡിയോയിൽ Live Chat ഓൺ അല്ല (അല്ലെങ്കിൽ ലൈവ് അവസാനിച്ചു).';
+      ytChat=null;activeYtKey='';
       return;
     }
 
     note.style.color='#34d399';
-    note.textContent='● Connected! പുതിയ ലൈവ് കമന്റുകൾ മാത്രം വായിക്കുന്നു...';
+    note.textContent='● Connected! പുതിയ ലൈവ് കമന്റുകൾ മാത്രം വായിക്കുന്നു (Quota Saver ON)';
     st.ai=true;ytFirstBatchDone=false;seen.clear();ytTok=null;
     render();
     if(!isSilent)sync();
     clearInterval(ytInt);
 
     const pollChat=async()=>{
-      if(!ytChat||!st.ai)return;
+      // Only Master Device polls YouTube API to save 50%+ quota! Secondary devices receive via MQTT SP!
+      if(!ytChat||!st.ai||!isMasterDevice)return;
       try{
         let u=`https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytChat}&part=snippet,authorDetails&key=${k}`+(ytTok?`&pageToken=${ytTok}`:'');
         let res=await fetch(u);
@@ -962,7 +983,7 @@ async function connectYT(isSilent=false){
             let tx=i.snippet?.displayMessage||'';
             if(tx){
               speak(a,tx);
-              if(isMasterDevice&&client&&client.connected){
+              if(client&&client.connected){
                 client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));
               }
             }
@@ -972,7 +993,7 @@ async function connectYT(isSilent=false){
     };
 
     await pollChat();
-    ytInt=setInterval(pollChat,4000);
+    ytInt=setInterval(pollChat,7000); // 7-second interval keeps quota safe all day!
   }catch(e){
     note.style.color='#f87171';
     note.textContent='❌ Network Error: ഇന്റർനെറ്റ് കണക്ഷൻ പരിശോധിക്കുക.';
@@ -980,12 +1001,13 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v24'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v25'));if(s)st={...st,...s};}catch(e){}
 
-const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key')||'';
-const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id')||'';
-if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key',initKey);st.ytKey=initKey;}
-if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id',initVid);st.ytVid=initVid;}
+// Only load fresh v25 saved keys (ignores old exhausted v24 keys!)
+const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v25')||'';
+const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v25')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v25',initKey);st.ytKey=initKey;}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v25',initVid);st.ytVid=initVid;}
 
 if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=resolveCountryFlag(st.bN,st.bN)||st.bN.slice(0,3);st.manualLock=true;}
@@ -1011,7 +1033,6 @@ if(initKey&&initVid){
   connectYT(true);
 }
 
-// Zero-Glitch Master-Display MQTT Sync
 if(typeof mqtt!=='undefined'){
   client=mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
   client.on('connect',()=>{
@@ -1032,16 +1053,13 @@ if(typeof mqtt!=='undefined'){
         lastRemoteSyncTime=Date.now();
         isMasterDevice=false;
         st={...st,...p.d};
-        if(st.ytKey){
+        if(st.ytKey!==undefined){
           document.getElementById('apiKeyInp').value=st.ytKey;
-          localStorage.setItem('yt_api_key',st.ytKey);
+          localStorage.setItem('yt_api_key_v25',st.ytKey);
         }
-        if(st.ytVid){
+        if(st.ytVid!==undefined){
           document.getElementById('vidInp').value=st.ytVid;
-          localStorage.setItem('yt_video_id',st.ytVid);
-        }
-        if(st.ytKey&&st.ytVid){
-          connectYT(true);
+          localStorage.setItem('yt_video_id_v25',st.ytVid);
         }
         document.getElementById('custBat').value=st.bN;
         document.getElementById('custBowl').value=st.fN;
