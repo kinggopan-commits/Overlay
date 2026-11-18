@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Glitch-Free Center Display</title>
+<title>Live Cricket Broadcast Overlay - Zero-Glitch Multi-Device Sync</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -33,9 +33,9 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7)}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* Stable, Glitch-Free Center Runs / Wicket Display */
+/* Stable Center Box */
 .center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
-.ball{color:#ffffff;font-size:44px;font-weight:900;line-height:0.95;text-shadow:0 3px 12px rgba(255,255,255,.4);will-change:transform}
+.ball{color:#ffffff;font-size:44px;font-weight:900;line-height:0.95;text-shadow:0 3px 12px rgba(255,255,255,.4)}
 .ball.c0{color:#e5e7eb}
 .ball.c1,.ball.c2,.ball.c3{color:#4ade80;text-shadow:0 0 12px rgba(74,222,128,.6)}
 .ball.c4{color:#38bdf8;text-shadow:0 0 16px rgba(56,189,248,.95);font-size:46px}
@@ -46,9 +46,6 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .event-sub.c4{background:#0284c7;color:#fff}
 .event-sub.c6{background:#eab308;color:#000}
 .event-sub.cW{background:#dc2626;color:#fff}
-
-.ball-pop{animation:popAnim .3s ease-out}
-@keyframes popAnim{0%{transform:scale(.65)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 
 .dot-l,.dot-r{position:absolute;top:5px;width:7px;height:7px;border-radius:50%;background:#ef4444}
 .dot-l{left:7px}.dot-r{right:7px}
@@ -62,12 +59,12 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 
 .toast{position:fixed;bottom:126px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Control Panel */
+/* Control Panel with Top Hide Button */
 .panel{display:none;max-width:540px;margin:10px auto;background:rgba(17,24,39,.97);color:#fff;border:1px solid #374151;border-radius:12px;padding:14px;font-family:sans-serif;box-shadow:0 10px 25px rgba(0,0,0,.85);position:relative;z-index:200}
 .panel.open{display:block}
-.p-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid #1f2937;padding-bottom:8px}
-.p-head h3{font-size:15px;color:#facc15}
-.badge{font-size:11px;padding:3px 8px;border-radius:10px;background:#7f1d1d;color:#fca5a5}
+.p-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;border-bottom:1px solid #1f2937;padding-bottom:8px}
+.p-head h3{font-size:14px;color:#facc15;flex:1}
+.badge{font-size:11px;padding:3px 8px;border-radius:10px;background:#7f1d1d;color:#fca5a5;white-space:nowrap}
 .badge.ok{background:#065f46;color:#34d399}
 .grp{margin-bottom:10px}
 .grp label{display:block;font-size:11px;color:#9ca3af;margin-bottom:4px;font-weight:600}
@@ -92,20 +89,22 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 <body class="bg-transparent" onclick="unlockSound()" ontouchstart="unlockSound()">
 
 <div class="panel" id="panel">
+  <!-- Top Header with Prominent Hide Panel Button -->
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Glitch-Free)</h3>
+    <h3>🎛️ Live Controller</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
+    <button class="btn btn-r" style="padding:6px 12px;font-size:12px" onclick="hidePanel()">✖ Hide</button>
   </div>
 
   <!-- 1. Select Match / Teams -->
   <div class="grp">
-    <label>1. Select Match / Teams (Synced Across All Devices)</label>
+    <label>1. Select Match / Teams (Zero-Glitch Multi-Device Sync)</label>
     <div class="row">
       <select id="matchSel"></select>
       <button class="btn btn-a" onclick="unlockAndRefresh()" title="Unlock & Force Live Refresh">🔄 Live</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Synced: Selected match stays active on any device opened</div>
+    <div class="note" id="espnNote">Active Controller: Syncing cleanly without flicker</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
@@ -189,13 +188,12 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <input type="checkbox" id="aiChk" style="width:20px;height:20px" onchange="toggleAI(this.checked)">
   </div>
 
-  <div class="grp">
+  <div class="grp" style="margin-bottom:0">
     <div class="row">
       <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Fast Voice</button>
-      <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
-      <button class="btn" onclick="hidePanel()">Hide Panel</button>
+      <button class="btn btn-d" style="flex:1" onclick="nextDemo()">▶ Next Demo</button>
     </div>
-    <div class="note" id="soundStatusNote">Active: Any device opening this URL keeps your saved setup</div>
+    <div class="note" id="soundStatusNote">Zero-Glitch Mode: Controller pushes updates, Display receives smoothly</div>
   </div>
 </div>
 
@@ -285,12 +283,12 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v22_noglitch';
+const TOPIC='cricket/live/kinggopan_v23_zeroglitch';
 let client=null;
 let panelOpen=isControlMode;
-let lastRenderedBallVal=null;
-let lastRenderedRuns=-1;
-let lastRenderedWkts=-1;
+let isMasterDevice=isControlMode; // Prevents 2 devices from fighting/glitching each other!
+let lastRemoteSyncTime=0;
+let lastStateHash='';
 
 function resolveCountryFlag(name,code){
   const n=(name||'').trim().toUpperCase();
@@ -330,11 +328,13 @@ function buildDropdown(){
 }
 
 function unlockAndRefresh(){
+  isMasterDevice=true;
   st.manualLock=false;
   fetchESPN(false);
 }
 
 document.getElementById('matchSel').onchange=e=>{
+  isMasterDevice=true;
   let val=e.target.value;
   if(val==='auto-espn'){
     st.id='auto-espn';
@@ -356,6 +356,7 @@ document.getElementById('matchSel').onchange=e=>{
 };
 
 function liveTypeTeams(){
+  isMasterDevice=true;
   let b=document.getElementById('custBat').value.trim().toUpperCase();
   let f=document.getElementById('custBowl').value.trim().toUpperCase();
   let c1=document.getElementById('col1').value;
@@ -375,6 +376,7 @@ function liveTypeTeams(){
 }
 
 function manualBatEdit(){
+  isMasterDevice=true;
   let r=parseInt(document.getElementById('inpRuns').value);
   let w=parseInt(document.getElementById('inpWkts').value);
   let ov=document.getElementById('inpOvers').value.trim();
@@ -396,18 +398,21 @@ function manualBatEdit(){
 }
 
 function manualOppEdit(){
+  isMasterDevice=true;
   st.oppSc=document.getElementById('inpOppScore').value.trim().toUpperCase();
   st.manualLock=true;st.ts=Date.now();
   render();sync();
 }
 
 function resetScoreZero(){
+  isMasterDevice=true;
   hist.push({...st});
   st.r=0;st.w=0;st.b=0;st.lb='0';st.manualLock=true;st.ts=Date.now();
   render();sync();
 }
 
 function liveTypeTicker(){
+  isMasterDevice=true;
   let v=document.getElementById('tickerInp').value.trim();
   if(v){st.t=v.toUpperCase();st.ts=Date.now();render();sync();}
 }
@@ -425,6 +430,11 @@ async function fetchJsonResilient(url){
 }
 
 async function fetchESPN(isAuto=true){
+  // Prevent secondary display devices from fighting with the active controller!
+  if(isAuto&&!isMasterDevice&&(Date.now()-lastRemoteSyncTime<25000)){
+    return;
+  }
+
   const noteEl=document.getElementById('espnNote');
   if(!isAuto)noteEl.textContent='Refreshing Live Scoreboard...';
   let d=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard');
@@ -495,7 +505,6 @@ async function fetchESPN(isAuto=true){
         if(need>0&&remB>0)statusDetail=`${bat.name} NEED ${need} RUNS IN ${remB} BALLS`;
       }
 
-      // Keep center display completely stable unless score/wicket actually changes!
       let detectedBall=st.lb||'0';
       if(st.id==='espn-'+ev.id&&st.bN===bat.name){
         if(bat.wkts>st.w)detectedBall='W';
@@ -524,11 +533,11 @@ async function fetchESPN(isAuto=true){
         document.getElementById('custBat').value=st.bN;
         document.getElementById('custBowl').value=st.fN;
         render();
-        if(changed)sync();
+        if(changed&&isMasterDevice)sync();
       }
     }
     let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    noteEl.textContent=st.manualLock?`Locked on ${st.bN} vs ${st.fN} (Synced Across Devices)`:`● Live Synced at ${now}`;
+    noteEl.textContent=st.manualLock?`Locked on ${st.bN} vs ${st.fN}`:`● Live Synced at ${now}`;
   }
 }
 
@@ -586,27 +595,15 @@ function render(){
   let ovPlayed=ballsToOvers(st.b);
   document.getElementById('batOv').textContent=`OVERS: ${ovPlayed}`;
 
-  // Glitch-Free Center Box: Only animate when the score/wicket/ball value actually changes!
+  // Static, Rock-Solid Center Box (No animations or re-renders that cause flicker/glitch)
   let evInfo=getEventLabel(st.lb);
   let lbEl=document.getElementById('lastBall');
   let subEl=document.getElementById('eventSubTag');
-  const isNewEvent=(evInfo.txt!==lastRenderedBallVal||st.r!==lastRenderedRuns||st.w!==lastRenderedWkts);
-
-  if(isNewEvent){
+  if(lbEl.textContent!==evInfo.txt){
     lbEl.textContent=evInfo.txt;
     lbEl.className='ball '+(evInfo.cls||'');
     subEl.textContent=evInfo.sub;
     subEl.className='event-sub '+(evInfo.cls||'');
-
-    if(lastRenderedBallVal!==null){
-      lbEl.classList.remove('ball-pop');
-      requestAnimationFrame(()=>{
-        lbEl.classList.add('ball-pop');
-      });
-    }
-    lastRenderedBallVal=evInfo.txt;
-    lastRenderedRuns=st.r;
-    lastRenderedWkts=st.w;
   }
 
   document.getElementById('bowlName').textContent=st.fN;
@@ -653,10 +650,13 @@ function render(){
 function setFlag(id,c,n){
   let el=document.getElementById(id);
   let iso=resolveCountryFlag(n,c);
+  const targetKey=iso||((c||n).slice(0,4).toUpperCase());
+  if(el.dataset.flagKey===targetKey)return; // Avoid re-fetching flag image on every render!
+  el.dataset.flagKey=targetKey;
   if(iso){
     el.innerHTML=`<img src="https://flagcdn.com/w160/${iso}.png" alt="${n}" onerror="this.style.display='none';this.parentNode.textContent='${n.slice(0,3)}'">`;
   }else{
-    el.textContent=(c||n).slice(0,4).toUpperCase();
+    el.textContent=targetKey;
   }
 }
 
@@ -666,13 +666,14 @@ function sync(){
   const v=document.getElementById('vidInp').value.trim()||localStorage.getItem('yt_video_id')||st.ytVid||'';
   if(k)st.ytKey=k;
   if(v)st.ytVid=v;
-  localStorage.setItem('ck_st_v22',JSON.stringify(st));
+  localStorage.setItem('ck_st_v23',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
 }
 
 function addBall(v){
+  isMasterDevice=true;
   unlockSound();
   hist.push({...st});
   st.lb=String(v);
@@ -691,10 +692,11 @@ function addBall(v){
   render();sync();
 }
 
-function addExtra(v){unlockSound();hist.push({...st});st.r++;st.lb=String(v);st.manualLock=true;render();sync();}
-function undoBall(){if(hist.length){st=hist.pop();render();sync();}}
+function addExtra(v){isMasterDevice=true;unlockSound();hist.push({...st});st.r++;st.lb=String(v);st.manualLock=true;render();sync();}
+function undoBall(){isMasterDevice=true;if(hist.length){st=hist.pop();render();sync();}}
 
 function setBg(b, autoClose=false){
+  isMasterDevice=true;
   st.bg=b;
   if(autoClose){
     panelOpen=false;
@@ -704,6 +706,7 @@ function setBg(b, autoClose=false){
 }
 
 function swapTeams(){
+  isMasterDevice=true;
   hist.push({...st});
   let prevScore=`${st.r}-${st.w}`;
   [st.bN,st.fN]=[st.fN,st.bN];
@@ -721,10 +724,11 @@ function swapTeams(){
 function togglePanel(){
   unlockSound();
   panelOpen=!panelOpen;
+  if(panelOpen)isMasterDevice=true;
   document.getElementById('panel').classList.toggle('open',panelOpen);
   render();
 }
-function openPanel(){unlockSound();panelOpen=true;document.getElementById('panel').classList.add('open');render();}
+function openPanel(){unlockSound();panelOpen=true;isMasterDevice=true;document.getElementById('panel').classList.add('open');render();}
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // ============================================================
@@ -826,6 +830,7 @@ function runQ(){
 
 let dTimer=null;
 function toggleAI(on){
+  isMasterDevice=true;
   unlockSound();
   st.ai=on;render();sync();clearInterval(dTimer);
   if(on){nextDemo();dTimer=setInterval(()=>{if(!ytChat)nextDemo();},12000);}
@@ -838,8 +843,8 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Glitch-free center runs display is now active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Glitch-free center runs display is now active!'}));
+  speak('Gopakumar','Zero-glitch multi-device sync is active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Zero-glitch multi-device sync is active!'}));
 }
 
 // ============================================================
@@ -854,6 +859,7 @@ function extractVideoId(input){
 }
 
 function saveAndPushApi(){
+  isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
   localStorage.setItem('yt_api_key',k);
@@ -868,7 +874,7 @@ async function connectYT(isSilent=false){
   let k=document.getElementById('apiKeyInp').value.trim();
   let rawV=document.getElementById('vidInp').value.trim();
   let v=extractVideoId(rawV);
-  saveAndPushApi();
+  if(!isSilent)saveAndPushApi();
   if(!k||!v)return;
   if(ytChat&&activeYtKey===k&&activeYtVid===v)return;
 
@@ -880,7 +886,9 @@ async function connectYT(isSilent=false){
     if(!ytChat){document.getElementById('ytNote').textContent='Live chat not found (Check Video ID)';return;}
     document.getElementById('ytNote').textContent='● Connected & Synced Across All Devices!';
     st.ai=true;ytFirstBatchDone=false;seen.clear();ytTok=null;
-    render();sync();clearInterval(ytInt);
+    render();
+    if(!isSilent)sync();
+    clearInterval(ytInt);
 
     const pollChat=async()=>{
       if(!ytChat||!st.ai)return;
@@ -904,7 +912,9 @@ async function connectYT(isSilent=false){
             let tx=i.snippet?.displayMessage||'';
             if(tx){
               speak(a,tx);
-              if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));
+              if(isMasterDevice&&client&&client.connected){
+                client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));
+              }
             }
           }
         });
@@ -917,7 +927,7 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v22'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v23'));if(s)st={...st,...s};}catch(e){}
 
 const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key')||'';
 const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id')||'';
@@ -948,19 +958,27 @@ if(initKey&&initVid){
   connectYT(true);
 }
 
+// Zero-Glitch Master-Display MQTT Sync
 if(typeof mqtt!=='undefined'){
   client=mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
   client.on('connect',()=>{
     document.getElementById('dotSync').classList.add('on');
     let b=document.getElementById('syncBadge');b.textContent='● Cloud Sync Active';b.classList.add('ok');
     client.subscribe(TOPIC);
-    if(isControlMode||initKey)sync();
+    if(isControlMode)sync();
   });
   client.on('message',(t,msg)=>{
     try{
       let p=JSON.parse(msg.toString());
       if(p.sid===SENDER_ID)return;
       if(p.k==='ST'&&p.d){
+        // Ignore duplicate packets to prevent any screen flicker/glitch!
+        const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,ytKey:p.d.ytKey,ytVid:p.d.ytVid});
+        if(incomingHash===lastStateHash)return;
+        lastStateHash=incomingHash;
+
+        lastRemoteSyncTime=Date.now();
+        isMasterDevice=false; // Yield master role to the device currently sending updates
         st={...st,...p.d};
         if(st.ytKey){
           document.getElementById('apiKeyInp').value=st.ytKey;
