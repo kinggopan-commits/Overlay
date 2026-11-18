@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Full Code</title>
+<title>Live Cricket Broadcast Overlay - Fast New-Only Chat & Direct PRISM Audio</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -93,7 +93,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Full Version)</h3>
+    <h3>🎛️ Live Cricket Controller (Fast New-Only Chat)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
@@ -158,7 +158,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 6. Background Mode -->
   <div class="grp">
-    <label>6. Screen Background Mode (Tap Transparent to Close Panel & Clear Screen)</label>
+    <label>6. Screen Background Mode</label>
     <div class="row">
       <button id="btnBgTrans" class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent', true)">Transparent</button>
       <button id="btnBgGreen" class="btn btn-g" style="flex:1" onclick="setBg('bg-green', false)">Green Screen</button>
@@ -166,36 +166,36 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
   </div>
 
-  <!-- 7. Copy Direct PRISM Link -->
+  <!-- 7. Copy Direct PRISM Link (Includes API Key & Video ID so Chrome is NOT needed!) -->
   <div class="grp">
-    <label>7. Copy Direct Link for PRISM Live</label>
+    <label>7. Copy PRISM Link (Works Inside PRISM Without Keeping Chrome Open!)</label>
     <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct PRISM Link</button>
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
   <!-- 8. Saved YouTube API Key & Video ID -->
   <div class="grp">
-    <label>8. YouTube API Key & Live Video ID (Saved Automatically)</label>
+    <label>8. YouTube API Key & Live Video ID (Reads ONLY New Chats Instantly)</label>
     <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px" oninput="saveApiInputs()">
     <div class="row">
       <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID" oninput="saveApiInputs()">
       <button class="btn btn-g" onclick="connectYT(false)">Connect</button>
     </div>
-    <div class="note" id="ytNote">API Key Saved</div>
+    <div class="note" id="ytNote">Ready: Skips old messages & reads only new live comments fast</div>
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
-    <span style="font-size:13px;font-weight:700">🎙️ AI Voice Reader (PRISM WebView Audio)</span>
+    <span style="font-size:13px;font-weight:700">🎙️ Instant AI Voice Reader (New Messages Only)</span>
     <input type="checkbox" id="aiChk" style="width:20px;height:20px" onchange="toggleAI(this.checked)">
   </div>
 
   <div class="grp">
     <div class="row">
-      <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Voice Sound</button>
+      <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Fast Voice</button>
       <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
       <button class="btn" onclick="hidePanel()">Hide Panel</button>
     </div>
-    <div class="note" id="soundStatusNote">Sound Engine: Ready (Tap overlay once in PRISM)</div>
+    <div class="note" id="soundStatusNote">Tip: Copy link in Step 7 into PRISM & tap overlay once. Then close Chrome!</div>
   </div>
 </div>
 
@@ -285,7 +285,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v18_full';
+const TOPIC='cricket/live/kinggopan_v19_fastnew';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -564,7 +564,7 @@ function updatePrismUrlBox(){
 function copyPrismUrl(){
   let u=updatePrismUrlBox();
   if(navigator.clipboard)navigator.clipboard.writeText(u);
-  alert('Copied PRISM Link:\n\n'+u);
+  alert('Copied Direct PRISM Link (Paste in PRISM Web Widget, tap once, then you can close Chrome):\n\n'+u);
 }
 
 function makeGrad(hex){
@@ -641,7 +641,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v18',JSON.stringify(st));
+  localStorage.setItem('ck_st_v19',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -703,7 +703,7 @@ function openPanel(){unlockSound();panelOpen=true;document.getElementById('panel
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // ============================================================
-// PRISM WEBVIEW + CHROME TRIPLE-FALLBACK VOICE ENGINE
+// FAST INSTANT VOICE ENGINE (NO DELAY, NO REPEATS)
 // ============================================================
 const DEMOS=[
   {a:'Arjun',m:'What a massive sixer!'},
@@ -744,75 +744,61 @@ function speak(a,m){
   t.textContent=`🎙️ ${cleanAuthor}: ${cleanMsg}`;
   t.style.display='block';
   clearTimeout(t._t);
-  t._t=setTimeout(()=>t.style.display='none',4500);
+  t._t=setTimeout(()=>t.style.display='none',3500);
 
+  // Keep queue fresh (max 3 latest messages so it never lags behind!)
+  if(q.length>=3)q.shift();
   q.push(txt);
   runQ();
 }
 
-async function runQ(){
+function runQ(){
   if(speaking||!q.length)return;
   speaking=true;
   let txt=q.shift();
   const statusNote=document.getElementById('soundStatusNote');
-  if(statusNote)statusNote.textContent='🔊 Reading: '+txt.slice(0,36)+'...';
+  if(statusNote)statusNote.textContent='🔊 Speaking: '+txt.slice(0,36);
 
   let done=false;
   const finish=()=>{
     if(done)return;
     done=true;
     speaking=false;
-    if(statusNote)statusNote.textContent='Sound Engine: Active (PRISM Internal Audio)';
     runQ();
   };
 
-  const tryWebSpeech=()=>{
+  // Instant Direct Audio URL (No slow CORS proxy delay!)
+  const directTts=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(txt.slice(0,160))}&tl=en&client=tw-ob`;
+
+  audioPlayer.pause();
+  audioPlayer.src=directTts;
+  audioPlayer.playbackRate=1.15; // Faster speech so comments don't pile up
+  audioPlayer.volume=1.0;
+
+  const fallbackSpeech=()=>{
     if('speechSynthesis' in window){
       try{
         window.speechSynthesis.cancel();
         let u=new SpeechSynthesisUtterance(txt);
         u.lang='en-IN';
+        u.rate=1.15;
         u.volume=1.0;
         u.onend=u.onerror=finish;
         window.speechSynthesis.speak(u);
-        setTimeout(finish,5500);
+        setTimeout(finish,4500);
         return;
       }catch(e){}
     }
     finish();
   };
 
-  const rawTts=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(txt.slice(0,170))}&tl=en&client=tw-ob`;
-  const proxyTts=`https://api.allorigins.win/raw?url=${encodeURIComponent(rawTts)}`;
-
-  try{
-    const res=await fetch(proxyTts);
-    if(res.ok){
-      const blob=await res.blob();
-      const blobUrl=URL.createObjectURL(blob);
-      audioPlayer.pause();
-      audioPlayer.src=blobUrl;
-      audioPlayer.volume=1.0;
-      audioPlayer.onended=()=>{URL.revokeObjectURL(blobUrl);finish();};
-      audioPlayer.onerror=()=>{URL.revokeObjectURL(blobUrl);tryWebSpeech();};
-      await audioPlayer.play();
-      setTimeout(finish,7000);
-      return;
-    }
-  }catch(e){}
-
-  try{
-    audioPlayer.pause();
-    audioPlayer.src=rawTts;
-    audioPlayer.volume=1.0;
-    audioPlayer.onended=finish;
-    audioPlayer.onerror=tryWebSpeech;
-    await audioPlayer.play();
-    setTimeout(finish,7000);
-    return;
-  }catch(e){}
-
-  tryWebSpeech();
+  audioPlayer.onended=finish;
+  audioPlayer.onerror=fallbackSpeech;
+  audioPlayer.play().then(()=>{
+    setTimeout(finish,5000);
+  }).catch(()=>{
+    fallbackSpeech();
+  });
 }
 
 let dTimer=null;
@@ -829,12 +815,14 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','PRISM Live voice audio is now working!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'PRISM Live voice audio is now working!'}));
+  speak('Gopakumar','Instant voice reader is fast and active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Instant voice reader is fast and active!'}));
 }
 
-// Persistent YouTube API Key & Live Chat
-let ytChat=null,ytTok=null,ytInt=null,seen=new Set();
+// ============================================================
+// YOUTUBE LIVE CHAT: SKIPS OLD MESSAGES, READS ONLY NEW FAST!
+// ============================================================
+let ytChat=null,ytTok=null,ytInt=null,seen=new Set(),ytFirstBatchDone=false;
 
 function extractVideoId(input){
   const val=(input||'').trim();
@@ -857,24 +845,53 @@ async function connectYT(isSilent=false){
   let v=extractVideoId(rawV);
   saveApiInputs();
   if(!k||!v)return;
-  if(!isSilent)document.getElementById('ytNote').textContent='Connecting YouTube API...';
+  if(!isSilent)document.getElementById('ytNote').textContent='Connecting YouTube Live Chat...';
   try{
     let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${v}&key=${k}`);
     let d=await r.json();ytChat=d.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
     if(!ytChat){document.getElementById('ytNote').textContent='Live chat not found (Check Video ID)';return;}
-    document.getElementById('ytNote').textContent='● YouTube API Connected & Saved';
-    st.ai=true;render();sync();clearInterval(ytInt);
-    ytInt=setInterval(async()=>{
+    document.getElementById('ytNote').textContent='● Connected! Reading ONLY new live comments fast';
+    st.ai=true;ytFirstBatchDone=false;seen.clear();ytTok=null;
+    render();sync();clearInterval(ytInt);
+
+    const pollChat=async()=>{
       if(!ytChat||!st.ai)return;
-      let u=`https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytChat}&part=snippet,authorDetails&key=${k}`+(ytTok?`&pageToken=${ytTok}`:'');
-      let res=await fetch(u);let dat=await res.json();if(dat.nextPageToken)ytTok=dat.nextPageToken;
-      (dat.items||[]).forEach(i=>{if(!seen.has(i.id)){seen.add(i.id);let a=i.authorDetails?.displayName||'Viewer',tx=i.snippet?.displayMessage||'';if(tx){speak(a,tx);if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));}}});
-    },6000);
+      try{
+        let u=`https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytChat}&part=snippet,authorDetails&key=${k}`+(ytTok?`&pageToken=${ytTok}`:'');
+        let res=await fetch(u);
+        let dat=await res.json();
+        if(dat.nextPageToken)ytTok=dat.nextPageToken;
+        const items=dat.items||[];
+
+        // First poll: mark all existing/old messages as seen so they are NEVER read!
+        if(!ytFirstBatchDone){
+          items.forEach(i=>seen.add(i.id));
+          ytFirstBatchDone=true;
+          return;
+        }
+
+        // Subsequent polls: read ONLY brand-new messages once!
+        items.forEach(i=>{
+          if(!seen.has(i.id)){
+            seen.add(i.id);
+            let a=i.authorDetails?.displayName||'Viewer';
+            let tx=i.snippet?.displayMessage||'';
+            if(tx){
+              speak(a,tx);
+              if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));
+            }
+          }
+        });
+      }catch(e){}
+    };
+
+    await pollChat(); // Immediately skip old backlog on connect
+    ytInt=setInterval(pollChat,2500); // Fast 2.5-second check for instant reading!
   }catch(e){document.getElementById('ytNote').textContent='Connection Error';}
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v18'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v19'));if(s)st={...st,...s};}catch(e){}
 
 const initKey=qp.get('key')||localStorage.getItem('yt_api_key')||'';
 const initVid=qp.get('vid')||localStorage.getItem('yt_video_id')||'';
