@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Smooth Audio v27</title>
+<title>Live Cricket Broadcast Overlay - Full Complete v28</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -12,9 +12,16 @@ html,body{width:100%;height:100%;background:transparent;font-family:'Arial Black
 html.bg-transparent,body.bg-transparent{background:transparent !important;background-color:rgba(0,0,0,0) !important}
 html.bg-green,body.bg-green{background:#00b140 !important}
 html.bg-dark,body.bg-dark{background:#0b0f19 !important}
-body.ctrl-open{overflow-y:auto;padding-bottom:145px}
+body.ctrl-open{overflow-y:auto;padding-bottom:155px}
 
 .overlay{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:98%;max-width:1120px;z-index:100;filter:drop-shadow(0 6px 14px rgba(0,0,0,.85))}
+
+/* Floating Like & Subscribe Banner */
+.sub-banner{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:6px;padding-right:6px}
+.sub-pill{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(90deg,#cc0000,#ff1e1e);color:#fff;font-size:11px;font-weight:900;padding:4px 12px;border-radius:20px;border:1.5px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.85);letter-spacing:.5px;animation:pulseSub 2s infinite}
+.like-pill{background:linear-gradient(90deg,#1d4ed8,#2563eb)}
+@keyframes pulseSub{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
 .top-bar{height:4px;background:linear-gradient(90deg,#b30000,#ff1e1e,#b30000);border-radius:6px 6px 0 0}
 .main{display:flex;height:82px;background:#0d1117;border-left:3px solid #d40000;border-right:3px solid #d40000}
 
@@ -56,8 +63,9 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .crr{background:#111827;border-left:2px solid #f59e0b;padding:0 10px;display:flex;align-items:center;color:#fff;font-size:11px;font-weight:900;white-space:nowrap}
 .crr span{color:#facc15;margin-left:4px}
 
-.toast{position:fixed;bottom:126px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast{position:fixed;bottom:145px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;border:1px solid #38bdf8;padding:6px 14px;border-radius:20px;font-family:sans-serif;font-size:12px;display:none;z-index:99;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* Control Panel */
 .panel{display:none;max-width:540px;margin:10px auto;background:rgba(17,24,39,.97);color:#fff;border:1px solid #374151;border-radius:12px;padding:14px;font-family:sans-serif;box-shadow:0 10px 25px rgba(0,0,0,.85);position:relative;z-index:200}
 .panel.open{display:block}
 .p-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;border-bottom:1px solid #1f2937;padding-bottom:8px}
@@ -81,6 +89,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 @media(max-width:600px){
   .main{height:72px}.score{font-size:19px}.overs-badge{font-size:9px;padding:1px 5px}.bowl-lbl{font-size:15px}
   .flag{width:40px;height:40px;font-size:10px}.center-box{width:82px}.ball{font-size:34px}.ball.c4,.ball.c6,.ball.cW{font-size:36px}.pill{font-size:9px;padding:1px 7px}
+  .sub-pill{font-size:9px;padding:3px 9px}
 }
 </style>
 </head>
@@ -176,6 +185,11 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
+    <span style="font-size:13px;font-weight:700">👍 Show Like & Subscribe Banner</span>
+    <input type="checkbox" id="subChk" checked style="width:20px;height:20px" onchange="toggleSubBanner(this.checked)">
+  </div>
+
+  <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
     <span style="font-size:13px;font-weight:700">🎙️ Smooth AI Voice Reader</span>
     <input type="checkbox" id="aiChk" style="width:20px;height:20px" onchange="toggleAI(this.checked)">
   </div>
@@ -193,6 +207,10 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 <audio id="ttsAudioPlayer" playsinline preload="auto"></audio>
 
 <div class="overlay">
+  <div class="sub-banner" id="subBanner">
+    <div class="sub-pill like-pill">👍 LIKE</div>
+    <div class="sub-pill">🔔 SUBSCRIBE</div>
+  </div>
   <div class="top-bar"></div>
   <div class="main">
     <div class="wing-l" id="wL">
@@ -358,10 +376,10 @@ const BUILTIN_TEAMS=[
 let allTeams=[...BUILTIN_TEAMS];
 const qp=new URLSearchParams(location.search);
 const isControlMode=qp.get('control')==='1';
-let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
+let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,showSub:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v27_smooth';
+const TOPIC='cricket/live/kinggopan_v28_full';
 let client=null;
 let panelOpen=isControlMode;
 let isMasterDevice=isControlMode;
@@ -508,6 +526,12 @@ function liveTypeTicker(){
   isMasterDevice=true;
   let v=document.getElementById('tickerInp').value.trim();
   if(v){st.t=v.toUpperCase();st.ts=Date.now();render();sync();}
+}
+
+function toggleSubBanner(on){
+  isMasterDevice=true;
+  st.showSub=on;
+  render();sync();
 }
 
 async function fetchJsonResilient(url){
@@ -678,8 +702,8 @@ function updatePrismUrlBox(){
     p.set('tot',st.totOv||20);
     if(st.oppSc)p.set('oppsc',st.oppSc);
   }
-  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v27')||'';
-  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v27')||'';
+  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v28')||'';
+  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v28')||'';
   if(savedKey)p.set('key',savedKey);
   if(savedVid)p.set('vid',extractVideoId(savedVid));
   p.set('bg',st.bg.replace('bg-',''));
@@ -752,6 +776,10 @@ function render(){
   document.getElementById('btnBgGreen').classList.toggle('btn-active',activeBg==='bg-green');
   document.getElementById('btnBgDark').classList.toggle('btn-active',activeBg==='bg-dark');
 
+  const showSub=(st.showSub!==false);
+  document.getElementById('subChk').checked=showSub;
+  document.getElementById('subBanner').style.display=showSub?'flex':'none';
+
   document.getElementById('aiChk').checked=st.ai;
   document.getElementById('dotAI').className='dot-r'+(st.ai?' on':'');
   updatePrismUrlBox();
@@ -788,7 +816,7 @@ function sync(){
   const v=document.getElementById('vidInp').value.trim();
   st.ytKey=k;
   st.ytVid=v;
-  localStorage.setItem('ck_st_v27',JSON.stringify(st));
+  localStorage.setItem('ck_st_v28',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -968,8 +996,8 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Smooth audio reader is now clear and active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Smooth audio reader is now clear and active!'}));
+  speak('Gopakumar','Like and Subscribe banner plus smooth voice active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Like and Subscribe banner plus smooth voice active!'}));
 }
 
 // ============================================================
@@ -988,7 +1016,7 @@ function clearSavedApi(){
   clearInterval(ytInt);
   ytChat=null;activeYtKey='';activeYtVid='';
   document.getElementById('apiKeyInp').value='';
-  localStorage.removeItem('yt_api_key_v27');
+  localStorage.removeItem('yt_api_key_v28');
   st.ytKey='';
   const note=document.getElementById('ytNote');
   note.style.color='#facc15';
@@ -1001,8 +1029,8 @@ function saveAndPushApi(){
   isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  localStorage.setItem('yt_api_key_v27',k);
-  localStorage.setItem('yt_video_id_v27',v);
+  localStorage.setItem('yt_api_key_v28',k);
+  localStorage.setItem('yt_video_id_v28',v);
   st.ytKey=k;st.ytVid=v;
   updatePrismUrlBox();
   sync();
@@ -1124,12 +1152,12 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v27'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v28'));if(s)st={...st,...s};}catch(e){}
 
-const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v27')||'';
-const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v27')||'';
-if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v27',initKey);st.ytKey=initKey;}
-if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v27',initVid);st.ytVid=initVid;}
+const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v28')||'';
+const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v28')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v28',initKey);st.ytKey=initKey;}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v28',initVid);st.ytVid=initVid;}
 
 if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();const db=resolveDomesticBadge(st.bN,st.bN);st.bC=resolveCountryFlag(st.bN,st.bN)||(db?db.code:st.bN.slice(0,3));st.manualLock=true;}
@@ -1168,7 +1196,7 @@ if(typeof mqtt!=='undefined'){
       let p=JSON.parse(msg.toString());
       if(p.sid===SENDER_ID)return;
       if(p.k==='ST'&&p.d){
-        const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,ytKey:p.d.ytKey,ytVid:p.d.ytVid});
+        const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,showSub:p.d.showSub,ytKey:p.d.ytKey,ytVid:p.d.ytVid});
         if(incomingHash===lastStateHash)return;
         lastStateHash=incomingHash;
 
@@ -1177,11 +1205,11 @@ if(typeof mqtt!=='undefined'){
         st={...st,...p.d};
         if(st.ytKey!==undefined){
           document.getElementById('apiKeyInp').value=st.ytKey;
-          localStorage.setItem('yt_api_key_v27',st.ytKey);
+          localStorage.setItem('yt_api_key_v28',st.ytKey);
         }
         if(st.ytVid!==undefined){
           document.getElementById('vidInp').value=st.ytVid;
-          localStorage.setItem('yt_video_id_v27',st.ytVid);
+          localStorage.setItem('yt_video_id_v28',st.ytVid);
         }
         document.getElementById('custBat').value=st.bN;
         document.getElementById('custBowl').value=st.fN;
