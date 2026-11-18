@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Fast New-Only Chat & Direct PRISM Audio</title>
+<title>Live Cricket Broadcast Overlay - Clean Overs & Cross-Device State</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -93,19 +93,19 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Fast New-Only Chat)</h3>
+    <h3>🎛️ Live Cricket Controller (Cloud Sync Across Devices)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
   <!-- 1. Select Match / Teams -->
   <div class="grp">
-    <label>1. Select Match / Teams (Auto-Refreshes Live Every 10 Seconds)</label>
+    <label>1. Select Match / Teams (Synced Across All Devices)</label>
     <div class="row">
       <select id="matchSel"></select>
       <button class="btn btn-a" onclick="unlockAndRefresh()" title="Unlock & Force Live Refresh">🔄 Live</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Auto-Live ON: Updating Scores & Overs Automatically...</div>
+    <div class="note" id="espnNote">Synced: Selected match stays active on any device opened</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
@@ -145,7 +145,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <div class="row">
       <input type="number" id="inpRuns" placeholder="Runs" oninput="manualBatEdit()">
       <input type="number" id="inpWkts" placeholder="Wkts" max="10" min="0" oninput="manualBatEdit()">
-      <input type="text" id="inpOvers" placeholder="Ov (4.2)" oninput="manualBatEdit()">
+      <input type="text" id="inpOvers" placeholder="Ov (19.1)" oninput="manualBatEdit()">
       <input type="text" id="inpOppScore" placeholder="Opp (185-7)" oninput="manualOppEdit()">
     </div>
   </div>
@@ -158,7 +158,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 6. Background Mode -->
   <div class="grp">
-    <label>6. Screen Background Mode</label>
+    <label>6. Screen Background Mode (Tap Transparent to Close Panel & Clear Screen)</label>
     <div class="row">
       <button id="btnBgTrans" class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent', true)">Transparent</button>
       <button id="btnBgGreen" class="btn btn-g" style="flex:1" onclick="setBg('bg-green', false)">Green Screen</button>
@@ -166,16 +166,16 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
   </div>
 
-  <!-- 7. Copy Direct PRISM Link (Includes API Key & Video ID so Chrome is NOT needed!) -->
+  <!-- 7. Copy Direct PRISM Link -->
   <div class="grp">
-    <label>7. Copy PRISM Link (Works Inside PRISM Without Keeping Chrome Open!)</label>
+    <label>7. Copy PRISM Link (Loads Your Saved Match & API on Any Device)</label>
     <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct PRISM Link</button>
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
   <!-- 8. Saved YouTube API Key & Video ID -->
   <div class="grp">
-    <label>8. YouTube API Key & Live Video ID (Reads ONLY New Chats Instantly)</label>
+    <label>8. YouTube API Key & Live Video ID (Synced Across Devices)</label>
     <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px" oninput="saveApiInputs()">
     <div class="row">
       <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID" oninput="saveApiInputs()">
@@ -195,7 +195,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
       <button class="btn" onclick="hidePanel()">Hide Panel</button>
     </div>
-    <div class="note" id="soundStatusNote">Tip: Copy link in Step 7 into PRISM & tap overlay once. Then close Chrome!</div>
+    <div class="note" id="soundStatusNote">Active: Any device opening this URL keeps your saved setup</div>
   </div>
 </div>
 
@@ -208,8 +208,8 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <div class="wing-l" id="wL">
       <div class="team-col">
         <div class="pill" id="batName">SRI LANKA</div>
-        <div class="score" id="batScore">66-5</div>
-        <div class="overs-badge" id="batOv">OVERS: 12.2 / 20</div>
+        <div class="score" id="batScore">73-3</div>
+        <div class="overs-badge" id="batOv">OVERS: 19.1</div>
       </div>
       <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/lk.png"></div>
     </div>
@@ -217,22 +217,22 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <div class="center-box" onclick="togglePanel()" title="Tap to Open/Close Settings">
       <div class="dot-l" id="dotSync" title="Green = Live Sync"></div>
       <div class="dot-r" id="dotAI" title="Blue = AI Voice"></div>
-      <div class="ball c2" id="lastBall">2</div>
-      <div class="event-sub" id="eventSubTag">2 RUNS</div>
+      <div class="ball c2" id="lastBall">5</div>
+      <div class="event-sub" id="eventSubTag">5 RUNS</div>
     </div>
 
     <div class="wing-r" id="wR">
       <div class="flag" id="bowlFlag"><img src="https://flagcdn.com/w160/pk.png"></div>
       <div class="team-col right">
         <div class="pill" id="bowlName">PAKISTAN</div>
-        <div class="bowl-lbl" id="rightMainText">BOWLING</div>
-        <div class="overs-badge rem" id="bowlRemOv">REM: 7.4 OV</div>
+        <div class="bowl-lbl" id="rightMainText">325-0</div>
+        <div class="overs-badge rem" id="bowlRemOv">REM: 29.0 OV</div>
       </div>
     </div>
   </div>
   <div class="bot-bar">
-    <div class="status" id="botTxt">PAK OPT TO BOWL</div>
-    <div class="crr">CRR:<span id="crrTxt">5.35</span></div>
+    <div class="status" id="botTxt">SL NEED 253 RUNS IN 174 BALLS</div>
+    <div class="crr">CRR:<span id="crrTxt">3.48</span></div>
   </div>
 </div>
 
@@ -282,10 +282,10 @@ const BUILTIN_TEAMS=[
 let allTeams=[...BUILTIN_TEAMS];
 const qp=new URLSearchParams(location.search);
 const isControlMode=qp.get('control')==='1';
-let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
+let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v19_fastnew';
+const TOPIC='cricket/live/kinggopan_v20_cleanov';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -500,7 +500,7 @@ async function fetchESPN(isAuto=true){
       }
 
       list.push({
-        id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag} - ${totOv} OV]`,isLive:(tag==='LIVE'),
+        id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag}]`,isLive:(tag==='LIVE'),
         bN:bat.name,bC:bat.iso,c1:'#1d4ed8',r:bat.runs,w:bat.wkts,b:bat.balls,totOv:totOv,
         lb:detectedBall,fN:bowl.name,fC:bowl.iso,c2:'#047857',oppSc:oppSc,
         t:statusDetail
@@ -522,7 +522,7 @@ async function fetchESPN(isAuto=true){
       }
     }
     let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    noteEl.textContent=st.manualLock?`Manual Mode (Tap 🔄 Live for Auto-Score)`:`● Auto-Live Updated at ${now}`;
+    noteEl.textContent=st.manualLock?`Locked on ${st.bN} vs ${st.fN} (Synced Across Devices)`:`● Live Synced at ${now}`;
   }
 }
 
@@ -545,14 +545,15 @@ function getEventLabel(val){
 function updatePrismUrlBox(){
   let base=location.origin+location.pathname;
   let p=new URLSearchParams();
+  if(st.id&&st.id!=='auto-espn')p.set('mid',st.id);
   if(st.manualLock){
     p.set('bat',st.bN);p.set('bowl',st.fN);
     p.set('c1',st.c1.replace('#',''));p.set('c2',st.c2.replace('#',''));
     p.set('tot',st.totOv||20);
     if(st.oppSc)p.set('oppsc',st.oppSc);
   }
-  const savedKey=localStorage.getItem('yt_api_key')||'';
-  const savedVid=localStorage.getItem('yt_video_id')||'';
+  const savedKey=st.ytKey||localStorage.getItem('yt_api_key')||'';
+  const savedVid=st.ytVid||localStorage.getItem('yt_video_id')||'';
   if(savedKey)p.set('key',savedKey);
   if(savedVid)p.set('vid',extractVideoId(savedVid));
   p.set('bg',st.bg.replace('bg-',''));
@@ -564,7 +565,7 @@ function updatePrismUrlBox(){
 function copyPrismUrl(){
   let u=updatePrismUrlBox();
   if(navigator.clipboard)navigator.clipboard.writeText(u);
-  alert('Copied Direct PRISM Link (Paste in PRISM Web Widget, tap once, then you can close Chrome):\n\n'+u);
+  alert('Copied Direct PRISM Link (Any device opening this link keeps your saved match & API):\n\n'+u);
 }
 
 function makeGrad(hex){
@@ -572,13 +573,14 @@ function makeGrad(hex){
 }
 
 function render(){
+  // 1. Left Wing: Clean Overs ONLY (e.g. OVERS: 19.1 — NO "/ 50" or "/ 20"!)
   document.getElementById('batName').textContent=st.bN;
   document.getElementById('wL').style.background=makeGrad(st.c1||'#d4a000');
   document.getElementById('batScore').textContent=`${st.r}-${st.w}`;
   let ovPlayed=ballsToOvers(st.b);
-  let totOv=parseInt(st.totOv)||20;
-  document.getElementById('batOv').textContent=`OVERS: ${ovPlayed} / ${totOv}`;
+  document.getElementById('batOv').textContent=`OVERS: ${ovPlayed}`;
 
+  // 2. Center Box: Big Runs Number
   let evInfo=getEventLabel(st.lb);
   let lbEl=document.getElementById('lastBall');
   let subEl=document.getElementById('eventSubTag');
@@ -589,8 +591,10 @@ function render(){
   subEl.textContent=evInfo.sub;
   subEl.className='event-sub '+(evInfo.cls||'');
 
+  // 3. Right Wing: Opponent Score & Clean Remaining Overs (REM: 29.0 OV)
   document.getElementById('bowlName').textContent=st.fN;
   document.getElementById('wR').style.background=makeGrad(st.c2||'#046a38');
+  let totOv=parseInt(st.totOv)||20;
   let totalMatchBalls=totOv*6;
   let remBalls=Math.max(0,totalMatchBalls-st.b);
   let remOvers=ballsToOvers(remBalls);
@@ -603,8 +607,9 @@ function render(){
     rightMain.className='bowl-lbl';
     rightMain.textContent='BOWLING';
   }
-  document.getElementById('bowlRemOv').textContent=`REM: ${remOvers} OV (${remBalls}B)`;
+  document.getElementById('bowlRemOv').textContent=`REM: ${remOvers} OV`;
 
+  // 4. Bottom Bar & CRR
   document.getElementById('botTxt').textContent=st.t;
   document.getElementById('crrTxt').textContent=st.b>0?((st.r/st.b)*6).toFixed(2):'0.00';
 
@@ -641,8 +646,11 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v19',JSON.stringify(st));
+  st.ytKey=localStorage.getItem('yt_api_key')||st.ytKey||'';
+  st.ytVid=localStorage.getItem('yt_video_id')||st.ytVid||'';
+  localStorage.setItem('ck_st_v20',JSON.stringify(st));
   if(client&&client.connected){
+    // Retained MQTT message ensures ANY device that opens the URL later immediately gets this exact setup!
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
 }
@@ -703,7 +711,7 @@ function openPanel(){unlockSound();panelOpen=true;document.getElementById('panel
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // ============================================================
-// FAST INSTANT VOICE ENGINE (NO DELAY, NO REPEATS)
+// FAST INSTANT VOICE ENGINE (NEW MESSAGES ONLY)
 // ============================================================
 const DEMOS=[
   {a:'Arjun',m:'What a massive sixer!'},
@@ -746,7 +754,6 @@ function speak(a,m){
   clearTimeout(t._t);
   t._t=setTimeout(()=>t.style.display='none',3500);
 
-  // Keep queue fresh (max 3 latest messages so it never lags behind!)
   if(q.length>=3)q.shift();
   q.push(txt);
   runQ();
@@ -767,12 +774,11 @@ function runQ(){
     runQ();
   };
 
-  // Instant Direct Audio URL (No slow CORS proxy delay!)
   const directTts=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(txt.slice(0,160))}&tl=en&client=tw-ob`;
 
   audioPlayer.pause();
   audioPlayer.src=directTts;
-  audioPlayer.playbackRate=1.15; // Faster speech so comments don't pile up
+  audioPlayer.playbackRate=1.15;
   audioPlayer.volume=1.0;
 
   const fallbackSpeech=()=>{
@@ -815,14 +821,14 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Instant voice reader is fast and active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Instant voice reader is fast and active!'}));
+  speak('Gopakumar','Clean overs and cross-device sync are active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Clean overs and cross-device sync are active!'}));
 }
 
 // ============================================================
 // YOUTUBE LIVE CHAT: SKIPS OLD MESSAGES, READS ONLY NEW FAST!
 // ============================================================
-let ytChat=null,ytTok=null,ytInt=null,seen=new Set(),ytFirstBatchDone=false;
+let ytChat=null,ytTok=null,ytInt=null,seen=new Set(),ytFirstBatchDone=false,activeYtKey='',activeYtVid='';
 
 function extractVideoId(input){
   const val=(input||'').trim();
@@ -835,6 +841,7 @@ function saveApiInputs(){
   const v=document.getElementById('vidInp').value.trim();
   localStorage.setItem('yt_api_key',k);
   localStorage.setItem('yt_video_id',v);
+  st.ytKey=k;st.ytVid=v;
   updatePrismUrlBox();
 }
 
@@ -845,12 +852,15 @@ async function connectYT(isSilent=false){
   let v=extractVideoId(rawV);
   saveApiInputs();
   if(!k||!v)return;
+  if(ytChat&&activeYtKey===k&&activeYtVid===v)return; // Already connected to same stream
+
+  activeYtKey=k;activeYtVid=v;
   if(!isSilent)document.getElementById('ytNote').textContent='Connecting YouTube Live Chat...';
   try{
     let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${v}&key=${k}`);
     let d=await r.json();ytChat=d.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
     if(!ytChat){document.getElementById('ytNote').textContent='Live chat not found (Check Video ID)';return;}
-    document.getElementById('ytNote').textContent='● Connected! Reading ONLY new live comments fast';
+    document.getElementById('ytNote').textContent='● Connected & Synced! Reading ONLY new comments';
     st.ai=true;ytFirstBatchDone=false;seen.clear();ytTok=null;
     render();sync();clearInterval(ytInt);
 
@@ -863,14 +873,12 @@ async function connectYT(isSilent=false){
         if(dat.nextPageToken)ytTok=dat.nextPageToken;
         const items=dat.items||[];
 
-        // First poll: mark all existing/old messages as seen so they are NEVER read!
         if(!ytFirstBatchDone){
           items.forEach(i=>seen.add(i.id));
           ytFirstBatchDone=true;
           return;
         }
 
-        // Subsequent polls: read ONLY brand-new messages once!
         items.forEach(i=>{
           if(!seen.has(i.id)){
             seen.add(i.id);
@@ -885,19 +893,20 @@ async function connectYT(isSilent=false){
       }catch(e){}
     };
 
-    await pollChat(); // Immediately skip old backlog on connect
-    ytInt=setInterval(pollChat,2500); // Fast 2.5-second check for instant reading!
+    await pollChat();
+    ytInt=setInterval(pollChat,2500);
   }catch(e){document.getElementById('ytNote').textContent='Connection Error';}
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v19'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v20'));if(s)st={...st,...s};}catch(e){}
 
-const initKey=qp.get('key')||localStorage.getItem('yt_api_key')||'';
-const initVid=qp.get('vid')||localStorage.getItem('yt_video_id')||'';
-if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key',initKey);}
-if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id',initVid);}
+const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key')||'';
+const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key',initKey);st.ytKey=initKey;}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id',initVid);st.ytVid=initVid;}
 
+if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=resolveCountryFlag(st.bN,st.bN)||st.bN.slice(0,3);st.manualLock=true;}
 if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=resolveCountryFlag(st.fN,st.fN)||st.fN.slice(0,3);st.manualLock=true;}
 if(qp.get('c1'))st.c1='#'+qp.get('c1').replace('#','');
@@ -921,11 +930,12 @@ if(initKey&&initVid){
   connectYT(true);
 }
 
+// Cross-Device Cloud State Sync (MQTT Retained)
 if(typeof mqtt!=='undefined'){
   client=mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
   client.on('connect',()=>{
     document.getElementById('dotSync').classList.add('on');
-    let b=document.getElementById('syncBadge');b.textContent='● Auto-Sync Live';b.classList.add('ok');
+    let b=document.getElementById('syncBadge');b.textContent='● Cloud Sync Active';b.classList.add('ok');
     client.subscribe(TOPIC);
     if(isControlMode)sync();
   });
@@ -934,7 +944,22 @@ if(typeof mqtt!=='undefined'){
       let p=JSON.parse(msg.toString());
       if(p.sid===SENDER_ID)return;
       if(p.k==='ST'&&p.d){
+        // Automatically apply the saved setup & match from your controller on ANY device!
         st={...st,...p.d};
+        if(st.ytKey&&!document.getElementById('apiKeyInp').value){
+          document.getElementById('apiKeyInp').value=st.ytKey;
+          localStorage.setItem('yt_api_key',st.ytKey);
+        }
+        if(st.ytVid&&!document.getElementById('vidInp').value){
+          document.getElementById('vidInp').value=st.ytVid;
+          localStorage.setItem('yt_video_id',st.ytVid);
+        }
+        if(st.ytKey&&st.ytVid&&!ytChat){
+          connectYT(true);
+        }
+        document.getElementById('custBat').value=st.bN;
+        document.getElementById('custBowl').value=st.fN;
+        buildDropdown();
         render();
       }else if(p.k==='SP'){speak(p.a,p.m);}
     }catch(e){}
