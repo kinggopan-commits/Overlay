@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Clean Overs & Cross-Device State</title>
+<title>Live Cricket Broadcast Overlay - Instant Cross-Device API Sync</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -33,7 +33,6 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7)}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* Big Center Runs / Wicket Display */
 .center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
 .ball{color:#ffffff;font-size:44px;font-weight:900;line-height:0.95;text-shadow:0 3px 12px rgba(255,255,255,.4)}
 .ball.c0{color:#e5e7eb}
@@ -93,7 +92,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Cloud Sync Across Devices)</h3>
+    <h3>🎛️ Live Cricket Controller (Instant Device Sync)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
@@ -166,22 +165,22 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
   </div>
 
-  <!-- 7. Copy Direct PRISM Link -->
+  <!-- 7. Copy Direct Link (Carries API Key + Video ID + Match to Any Device!) -->
   <div class="grp">
-    <label>7. Copy PRISM Link (Loads Your Saved Match & API on Any Device)</label>
-    <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct PRISM Link</button>
+    <label>7. Copy Direct Link (Opens With Same API Key & Match on Any Device!)</label>
+    <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct Link (With API & Match)</button>
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
   <!-- 8. Saved YouTube API Key & Video ID -->
   <div class="grp">
-    <label>8. YouTube API Key & Live Video ID (Synced Across Devices)</label>
-    <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px" oninput="saveApiInputs()">
+    <label>8. YouTube API Key & Live Video ID (Auto-Syncs to Other Devices)</label>
+    <input type="text" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px" oninput="saveAndPushApi()">
     <div class="row">
-      <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID" oninput="saveApiInputs()">
-      <button class="btn btn-g" onclick="connectYT(false)">Connect</button>
+      <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID" oninput="saveAndPushApi()">
+      <button class="btn btn-g" onclick="connectYT(false)">Connect & Sync</button>
     </div>
-    <div class="note" id="ytNote">Ready: Skips old messages & reads only new live comments fast</div>
+    <div class="note" id="ytNote">Ready: API Key & Video ID sync automatically to all devices</div>
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
@@ -285,7 +284,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v20_cleanov';
+const TOPIC='cricket/live/kinggopan_v21_apisync';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -563,9 +562,10 @@ function updatePrismUrlBox(){
 }
 
 function copyPrismUrl(){
+  sync();
   let u=updatePrismUrlBox();
   if(navigator.clipboard)navigator.clipboard.writeText(u);
-  alert('Copied Direct PRISM Link (Any device opening this link keeps your saved match & API):\n\n'+u);
+  alert('Copied Direct Link (Includes your API Key, Video ID & Match):\n\n'+u);
 }
 
 function makeGrad(hex){
@@ -573,14 +573,12 @@ function makeGrad(hex){
 }
 
 function render(){
-  // 1. Left Wing: Clean Overs ONLY (e.g. OVERS: 19.1 — NO "/ 50" or "/ 20"!)
   document.getElementById('batName').textContent=st.bN;
   document.getElementById('wL').style.background=makeGrad(st.c1||'#d4a000');
   document.getElementById('batScore').textContent=`${st.r}-${st.w}`;
   let ovPlayed=ballsToOvers(st.b);
   document.getElementById('batOv').textContent=`OVERS: ${ovPlayed}`;
 
-  // 2. Center Box: Big Runs Number
   let evInfo=getEventLabel(st.lb);
   let lbEl=document.getElementById('lastBall');
   let subEl=document.getElementById('eventSubTag');
@@ -591,7 +589,6 @@ function render(){
   subEl.textContent=evInfo.sub;
   subEl.className='event-sub '+(evInfo.cls||'');
 
-  // 3. Right Wing: Opponent Score & Clean Remaining Overs (REM: 29.0 OV)
   document.getElementById('bowlName').textContent=st.fN;
   document.getElementById('wR').style.background=makeGrad(st.c2||'#046a38');
   let totOv=parseInt(st.totOv)||20;
@@ -609,7 +606,6 @@ function render(){
   }
   document.getElementById('bowlRemOv').textContent=`REM: ${remOvers} OV`;
 
-  // 4. Bottom Bar & CRR
   document.getElementById('botTxt').textContent=st.t;
   document.getElementById('crrTxt').textContent=st.b>0?((st.r/st.b)*6).toFixed(2):'0.00';
 
@@ -646,11 +642,12 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  st.ytKey=localStorage.getItem('yt_api_key')||st.ytKey||'';
-  st.ytVid=localStorage.getItem('yt_video_id')||st.ytVid||'';
-  localStorage.setItem('ck_st_v20',JSON.stringify(st));
+  const k=document.getElementById('apiKeyInp').value.trim()||localStorage.getItem('yt_api_key')||st.ytKey||'';
+  const v=document.getElementById('vidInp').value.trim()||localStorage.getItem('yt_video_id')||st.ytVid||'';
+  if(k)st.ytKey=k;
+  if(v)st.ytVid=v;
+  localStorage.setItem('ck_st_v21',JSON.stringify(st));
   if(client&&client.connected){
-    // Retained MQTT message ensures ANY device that opens the URL later immediately gets this exact setup!
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
 }
@@ -821,12 +818,12 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Clean overs and cross-device sync are active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Clean overs and cross-device sync are active!'}));
+  speak('Gopakumar','API Key and setup are synced across all devices!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'API Key and setup are synced across all devices!'}));
 }
 
 // ============================================================
-// YOUTUBE LIVE CHAT: SKIPS OLD MESSAGES, READS ONLY NEW FAST!
+// YOUTUBE LIVE CHAT: SYNCED ACROSS ALL DEVICES
 // ============================================================
 let ytChat=null,ytTok=null,ytInt=null,seen=new Set(),ytFirstBatchDone=false,activeYtKey='',activeYtVid='';
 
@@ -836,13 +833,14 @@ function extractVideoId(input){
   return m?m[1]:val;
 }
 
-function saveApiInputs(){
+function saveAndPushApi(){
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
   localStorage.setItem('yt_api_key',k);
   localStorage.setItem('yt_video_id',v);
   st.ytKey=k;st.ytVid=v;
   updatePrismUrlBox();
+  sync(); // Immediately broadcast API Key & Video ID to all open devices!
 }
 
 async function connectYT(isSilent=false){
@@ -850,17 +848,17 @@ async function connectYT(isSilent=false){
   let k=document.getElementById('apiKeyInp').value.trim();
   let rawV=document.getElementById('vidInp').value.trim();
   let v=extractVideoId(rawV);
-  saveApiInputs();
+  saveAndPushApi();
   if(!k||!v)return;
-  if(ytChat&&activeYtKey===k&&activeYtVid===v)return; // Already connected to same stream
+  if(ytChat&&activeYtKey===k&&activeYtVid===v)return;
 
   activeYtKey=k;activeYtVid=v;
-  if(!isSilent)document.getElementById('ytNote').textContent='Connecting YouTube Live Chat...';
+  if(!isSilent)document.getElementById('ytNote').textContent='Connecting & Syncing to All Devices...';
   try{
     let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${v}&key=${k}`);
     let d=await r.json();ytChat=d.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
     if(!ytChat){document.getElementById('ytNote').textContent='Live chat not found (Check Video ID)';return;}
-    document.getElementById('ytNote').textContent='● Connected & Synced! Reading ONLY new comments';
+    document.getElementById('ytNote').textContent='● Connected & Synced Across All Devices!';
     st.ai=true;ytFirstBatchDone=false;seen.clear();ytTok=null;
     render();sync();clearInterval(ytInt);
 
@@ -899,7 +897,7 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v20'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v21'));if(s)st={...st,...s};}catch(e){}
 
 const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key')||'';
 const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id')||'';
@@ -937,24 +935,24 @@ if(typeof mqtt!=='undefined'){
     document.getElementById('dotSync').classList.add('on');
     let b=document.getElementById('syncBadge');b.textContent='● Cloud Sync Active';b.classList.add('ok');
     client.subscribe(TOPIC);
-    if(isControlMode)sync();
+    // Only push state if this device actually has an API key or is in control mode
+    if(isControlMode||initKey)sync();
   });
   client.on('message',(t,msg)=>{
     try{
       let p=JSON.parse(msg.toString());
       if(p.sid===SENDER_ID)return;
       if(p.k==='ST'&&p.d){
-        // Automatically apply the saved setup & match from your controller on ANY device!
         st={...st,...p.d};
-        if(st.ytKey&&!document.getElementById('apiKeyInp').value){
+        if(st.ytKey){
           document.getElementById('apiKeyInp').value=st.ytKey;
           localStorage.setItem('yt_api_key',st.ytKey);
         }
-        if(st.ytVid&&!document.getElementById('vidInp').value){
+        if(st.ytVid){
           document.getElementById('vidInp').value=st.ytVid;
           localStorage.setItem('yt_video_id',st.ytVid);
         }
-        if(st.ytKey&&st.ytVid&&!ytChat){
+        if(st.ytKey&&st.ytVid){
           connectYT(true);
         }
         document.getElementById('custBat').value=st.bN;
