@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Auto Live Score & API Saved</title>
+<title>Live Cricket Broadcast Overlay - Loud AI Voice & Auto Sync</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -89,15 +89,15 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 }
 </style>
 </head>
-<body class="bg-transparent">
+<body class="bg-transparent" onclick="unlockSound()" ontouchstart="unlockSound()">
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Auto-Live Score + Saved API)</h3>
+    <h3>🎛️ Live Cricket Controller (Auto-Live + Loud AI Voice)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
-  <!-- 1. Select Match / Teams (Unlocked Auto-Refresh Every 10s!) -->
+  <!-- 1. Select Match / Teams -->
   <div class="grp">
     <label>1. Select Match / Teams (Auto-Refreshes Live Every 10 Seconds)</label>
     <div class="row">
@@ -158,7 +158,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 6. Background Mode -->
   <div class="grp">
-    <label>6. Screen Background Mode (Tap Transparent to Close Panel & Clear Screen)</label>
+    <label>6. Screen Background Mode</label>
     <div class="row">
       <button id="btnBgTrans" class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent', true)">Transparent</button>
       <button id="btnBgGreen" class="btn btn-g" style="flex:1" onclick="setBg('bg-green', false)">Green Screen</button>
@@ -184,19 +184,24 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <div class="note" id="ytNote">API Key Saved</div>
   </div>
 
-  <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:8px">
-    <span style="font-size:13px;font-weight:700">🎙️ AI Voice Reader (Blue Light)</span>
+  <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
+    <span style="font-size:13px;font-weight:700">🎙️ AI Voice Reader (Loud Dual-Engine)</span>
     <input type="checkbox" id="aiChk" style="width:20px;height:20px" onchange="toggleAI(this.checked)">
   </div>
 
-  <div class="grp row" style="margin-bottom:0">
-    <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Voice</button>
-    <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
-    <button class="btn" onclick="hidePanel()">Hide Panel</button>
+  <div class="grp">
+    <div class="row">
+      <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Voice Sound</button>
+      <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
+      <button class="btn" onclick="hidePanel()">Hide Panel</button>
+    </div>
+    <div class="note" id="soundStatusNote">Sound Engine: Tap 'Test Voice Sound' to verify audio</div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+<!-- Hidden HTML5 Audio Player for Reliable Mobile & PRISM Voice Playback -->
+<audio id="ttsAudioPlayer" preload="auto"></audio>
 
 <div class="overlay">
   <div class="top-bar"></div>
@@ -281,11 +286,10 @@ const BUILTIN_TEAMS=[
 let allTeams=[...BUILTIN_TEAMS];
 const qp=new URLSearchParams(location.search);
 const isControlMode=qp.get('control')==='1';
-// Default to Unlocked Auto-Live ESPN mode!
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v15_autolive';
+const TOPIC='cricket/live/kinggopan_v16_loudvoice';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -343,7 +347,6 @@ document.getElementById('matchSel').onchange=e=>{
   if(f){
     hist.push({...st});
     let isEspn=val.startsWith('espn-');
-    // If ESPN match selected, keep manualLock=false so it auto-updates live every 10s!
     st={...st,...f,id:val,manualLock:!isEspn,ts:Date.now()};
     document.getElementById('custBat').value=f.bN;
     document.getElementById('custBowl').value=f.fN;
@@ -642,13 +645,14 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v15',JSON.stringify(st));
+  localStorage.setItem('ck_st_v16',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
 }
 
 function addBall(v){
+  unlockSound();
   hist.push({...st});
   st.lb=String(v);
   st.manualLock=true;
@@ -666,7 +670,7 @@ function addBall(v){
   render();sync();
 }
 
-function addExtra(v){hist.push({...st});st.r++;st.lb=String(v);st.manualLock=true;render();sync();}
+function addExtra(v){unlockSound();hist.push({...st});st.r++;st.lb=String(v);st.manualLock=true;render();sync();}
 function undoBall(){if(hist.length){st=hist.pop();render();sync();}}
 
 function setBg(b, autoClose=false){
@@ -694,43 +698,117 @@ function swapTeams(){
 }
 
 function togglePanel(){
+  unlockSound();
   panelOpen=!panelOpen;
   document.getElementById('panel').classList.toggle('open',panelOpen);
   render();
 }
-function openPanel(){panelOpen=true;document.getElementById('panel').classList.add('open');render();}
+function openPanel(){unlockSound();panelOpen=true;document.getElementById('panel').classList.add('open');render();}
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
-// AI Speech
-const DEMOS=[{a:'Arjun',m:'What a massive sixer!'},{a:'Rahul',m:'Brilliant wicket!'},{a:'Vishnu',m:'Dot ball, building pressure!'}];
-let dIdx=0,q=[],speaking=false;
+// ============================================================
+// LOUD DUAL-ENGINE AI VOICE (MP3 Audio + Web Speech Fallback)
+// ============================================================
+const DEMOS=[
+  {a:'Arjun',m:'What a massive sixer!'},
+  {a:'Rahul',m:'Brilliant wicket!'},
+  {a:'Vishnu',m:'Dot ball, building pressure!'},
+  {a:'Faisal',m:'Great batting partnership in the middle!'}
+];
+let dIdx=0,q=[],speaking=false,soundUnlocked=false;
+const audioPlayer=document.getElementById('ttsAudioPlayer');
+
+function unlockSound(){
+  if(soundUnlocked)return;
+  soundUnlocked=true;
+  try{
+    if('speechSynthesis' in window)window.speechSynthesis.resume();
+    // Play silent tiny data URI to unlock HTML5 audio on Android/Chrome/WebView
+    audioPlayer.src='data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    audioPlayer.play().catch(()=>{});
+  }catch(e){}
+}
+
 function speak(a,m){
-  let txt=`${a} says: ${m}`;
-  let t=document.getElementById('toast');t.textContent=`🎙️ ${a}: ${m}`;t.style.display='block';
-  clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',4500);
-  q.push(txt);runQ();
+  const cleanAuthor=(a||'Viewer').replace(/[^\w\s\u0D00-\u0D7F]/g,'').trim()||'Viewer';
+  const cleanMsg=(m||'').trim();
+  if(!cleanMsg)return;
+
+  let txt=`${cleanAuthor} says: ${cleanMsg}`;
+  let t=document.getElementById('toast');
+  t.textContent=`🎙️ ${cleanAuthor}: ${cleanMsg}`;
+  t.style.display='block';
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.style.display='none',4500);
+
+  q.push(txt);
+  runQ();
 }
+
 function runQ(){
-  if(speaking||!q.length)return;speaking=true;let txt=q.shift();
-  if('speechSynthesis' in window){
-    window.speechSynthesis.cancel();
-    let u=new SpeechSynthesisUtterance(txt);u.lang='en-IN';
-    u.onend=u.onerror=()=>{speaking=false;runQ();};
-    window.speechSynthesis.speak(u);
-  }else{speaking=false;}
+  if(speaking||!q.length)return;
+  speaking=true;
+  let txt=q.shift();
+  const statusNote=document.getElementById('soundStatusNote');
+  if(statusNote)statusNote.textContent='🔊 Speaking: '+txt.slice(0,38)+'...';
+
+  // Engine 1: Try Reliable Cloud MP3 Audio first (Works in Android WebView & Chrome!)
+  const encoded=encodeURIComponent(txt.slice(0,180));
+  const ttsUrl=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=en&client=tw-ob`;
+
+  audioPlayer.pause();
+  audioPlayer.src=ttsUrl;
+  audioPlayer.volume=1.0;
+
+  let finished=false;
+  const finishStep=()=>{
+    if(finished)return;
+    finished=true;
+    speaking=false;
+    if(statusNote)statusNote.textContent='Sound Engine: Active & Ready';
+    runQ();
+  };
+
+  audioPlayer.onended=finishStep;
+  audioPlayer.onerror=()=>{
+    // Engine 2: Fallback to Browser SpeechSynthesis
+    if('speechSynthesis' in window){
+      try{
+        window.speechSynthesis.cancel();
+        let u=new SpeechSynthesisUtterance(txt);
+        u.lang='en-IN';
+        u.volume=1.0;
+        u.rate=0.98;
+        u.onend=u.onerror=finishStep;
+        window.speechSynthesis.speak(u);
+        setTimeout(finishStep,6000);
+        return;
+      }catch(e){}
+    }
+    finishStep();
+  };
+
+  audioPlayer.play().catch(()=>{
+    audioPlayer.onerror();
+  });
 }
+
 let dTimer=null;
 function toggleAI(on){
+  unlockSound();
   st.ai=on;render();sync();clearInterval(dTimer);
   if(on){nextDemo();dTimer=setInterval(()=>{if(!ytChat)nextDemo();},12000);}
 }
 function nextDemo(){
-  let x=DEMOS[dIdx++%DEMOS.length];speak(x.a,x.m);
+  unlockSound();
+  let x=DEMOS[dIdx++%DEMOS.length];
+  speak(x.a,x.m);
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Live score auto-update is unlocked and API key is saved!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live score auto-update is unlocked and API key is saved!'}));
+  unlockSound();
+  speak('Gopakumar','Voice sound is now loud and clear!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Voice sound is now loud and clear!'}));
 }
 
 // Persistent YouTube API Key & Live Chat
@@ -751,6 +829,7 @@ function saveApiInputs(){
 }
 
 async function connectYT(isSilent=false){
+  unlockSound();
   let k=document.getElementById('apiKeyInp').value.trim();
   let rawV=document.getElementById('vidInp').value.trim();
   let v=extractVideoId(rawV);
@@ -773,7 +852,7 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v15'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v16'));if(s)st={...st,...s};}catch(e){}
 
 const initKey=qp.get('key')||localStorage.getItem('yt_api_key')||'';
 const initVid=qp.get('vid')||localStorage.getItem('yt_video_id')||'';
