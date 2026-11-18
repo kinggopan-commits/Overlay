@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Persistent Lock & Transparent Fix</title>
+<title>Live Cricket Broadcast Overlay - Auto Live Score & API Saved</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -93,24 +93,24 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Locked Settings & Flags)</h3>
+    <h3>🎛️ Live Cricket Controller (Auto-Live Score + Saved API)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
-  <!-- 1. Select Match / Teams (Stays Locked Until Changed!) -->
+  <!-- 1. Select Match / Teams (Unlocked Auto-Refresh Every 10s!) -->
   <div class="grp">
-    <label>1. Select Match / Teams (Stays Locked Until You Change It)</label>
+    <label>1. Select Match / Teams (Auto-Refreshes Live Every 10 Seconds)</label>
     <div class="row">
       <select id="matchSel"></select>
-      <button class="btn btn-a" onclick="fetchESPN(false)" title="Force Refresh Now">🔄</button>
+      <button class="btn btn-a" onclick="unlockAndRefresh()" title="Unlock & Force Live Refresh">🔄 Live</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Locked: Your selected match & API stay saved until changed</div>
+    <div class="note" id="espnNote">Auto-Live ON: Updating Scores & Overs Automatically...</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
   <div class="grp">
-    <label>2. Team Names & Wing Colors (Saved Automatically)</label>
+    <label>2. Custom Team Names & Wing Colors</label>
     <div class="row">
       <input type="text" id="custBat" placeholder="e.g. INDIA / IND" oninput="liveTypeTeams()">
       <input type="color" id="col1" value="#d4a000" onchange="liveTypeTeams()">
@@ -121,7 +121,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 3. Ball Control Pad -->
   <div class="grp">
-    <label>3. Tap Ball Result (Shows Big Runs 0, 1, 2, 3, 4, 6, W in Center!)</label>
+    <label>3. Manual Ball Pad (Optional Override)</label>
     <div class="pad">
       <button onclick="addBall('0')">0</button>
       <button onclick="addBall('1')">1</button>
@@ -156,9 +156,9 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <input type="text" id="tickerInp" placeholder="e.g. INDIA NEED 42 RUNS IN 24 BALLS" oninput="liveTypeTicker()">
   </div>
 
-  <!-- 6. Background Mode (Fixed Transparent Button!) -->
+  <!-- 6. Background Mode -->
   <div class="grp">
-    <label>6. Screen Background Mode (Tap Transparent to Preview Clear Overlay)</label>
+    <label>6. Screen Background Mode (Tap Transparent to Close Panel & Clear Screen)</label>
     <div class="row">
       <button id="btnBgTrans" class="btn btn-d" style="flex:1" onclick="setBg('bg-transparent', true)">Transparent</button>
       <button id="btnBgGreen" class="btn btn-g" style="flex:1" onclick="setBg('bg-green', false)">Green Screen</button>
@@ -168,20 +168,20 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <!-- 7. Copy Direct PRISM Link -->
   <div class="grp">
-    <label>7. Copy Direct Link for PRISM Live (Includes All Locked Settings)</label>
+    <label>7. Copy Direct Link for PRISM Live</label>
     <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct PRISM Link</button>
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
-  <!-- 8. Persistent YouTube API Key & Video ID -->
+  <!-- 8. Saved YouTube API Key & Video ID -->
   <div class="grp">
-    <label>8. YouTube API Key & Live Video ID (Saved Permanently Until Changed)</label>
+    <label>8. YouTube API Key & Live Video ID (Saved Automatically)</label>
     <input type="password" id="apiKeyInp" placeholder="Paste YouTube API Key (AIzaSy...)" style="margin-bottom:5px" oninput="saveApiInputs()">
     <div class="row">
       <input type="text" id="vidInp" placeholder="YouTube Live Video URL or ID" oninput="saveApiInputs()">
       <button class="btn btn-g" onclick="connectYT(false)">Connect</button>
     </div>
-    <div class="note" id="ytNote">Saved & Ready</div>
+    <div class="note" id="ytNote">API Key Saved</div>
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:8px">
@@ -211,7 +211,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
       <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/lk.png"></div>
     </div>
 
-    <!-- Center Box: Big Runs Number (Tap here anytime to open/close settings) -->
+    <!-- Center Box: Big Runs Number -->
     <div class="center-box" onclick="togglePanel()" title="Tap to Open/Close Settings">
       <div class="dot-l" id="dotSync" title="Green = Live Sync"></div>
       <div class="dot-r" id="dotAI" title="Blue = AI Voice"></div>
@@ -281,10 +281,11 @@ const BUILTIN_TEAMS=[
 let allTeams=[...BUILTIN_TEAMS];
 const qp=new URLSearchParams(location.search);
 const isControlMode=qp.get('control')==='1';
-let st={...BUILTIN_TEAMS[1],id:'sl-pak',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:true};
+// Default to Unlocked Auto-Live ESPN mode!
+let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v14_persist';
+const TOPIC='cricket/live/kinggopan_v15_autolive';
 let client=null;
 let panelOpen=isControlMode;
 
@@ -325,6 +326,11 @@ function buildDropdown(){
   });
 }
 
+function unlockAndRefresh(){
+  st.manualLock=false;
+  fetchESPN(false);
+}
+
 document.getElementById('matchSel').onchange=e=>{
   let val=e.target.value;
   if(val==='auto-espn'){
@@ -337,7 +343,7 @@ document.getElementById('matchSel').onchange=e=>{
   if(f){
     hist.push({...st});
     let isEspn=val.startsWith('espn-');
-    // Keep chosen team locked so it never switches away until user changes it!
+    // If ESPN match selected, keep manualLock=false so it auto-updates live every 10s!
     st={...st,...f,id:val,manualLock:!isEspn,ts:Date.now()};
     document.getElementById('custBat').value=f.bN;
     document.getElementById('custBowl').value=f.fN;
@@ -360,7 +366,7 @@ function liveTypeTeams(){
     st.fN=f;
     st.fC=resolveCountryFlag(f,f)||f.slice(0,3);
   }
-  st.id='custom-locked';
+  st.id='custom-manual';
   st.c1=c1;st.c2=c2;st.manualLock=true;st.ts=Date.now();
   st.t=`${st.bN} VS ${st.fN} - LIVE`;
   render();sync();
@@ -418,6 +424,7 @@ async function fetchJsonResilient(url){
 
 async function fetchESPN(isAuto=true){
   const noteEl=document.getElementById('espnNote');
+  if(!isAuto)noteEl.textContent='Refreshing Live Scoreboard...';
   let d=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard');
   let events=(d&&d.events)?d.events:[];
   if(!events.length){
@@ -508,10 +515,15 @@ async function fetchESPN(isAuto=true){
     if(!st.manualLock){
       let targetMatch=st.id?.startsWith('espn-')?list.find(x=>x.id===st.id):null;
       if(!targetMatch)targetMatch=list.find(x=>x.isLive)||list[0];
-      if(targetMatch){st={...st,...targetMatch,manualLock:false};render();sync();}
+      if(targetMatch){
+        st={...st,...targetMatch,manualLock:false};
+        document.getElementById('custBat').value=st.bN;
+        document.getElementById('custBowl').value=st.fN;
+        render();sync();
+      }
     }
     let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    noteEl.textContent=st.manualLock?`Locked on ${st.bN} vs ${st.fN}`:`Auto-Updated at ${now}`;
+    noteEl.textContent=st.manualLock?`Manual Mode (Tap 🔄 Live for Auto-Score)`:`● Auto-Live Updated at ${now}`;
   }
 }
 
@@ -561,7 +573,6 @@ function makeGrad(hex){
 }
 
 function render(){
-  // 1. Left Wing: Active Batting Team
   document.getElementById('batName').textContent=st.bN;
   document.getElementById('wL').style.background=makeGrad(st.c1||'#d4a000');
   document.getElementById('batScore').textContent=`${st.r}-${st.w}`;
@@ -569,7 +580,6 @@ function render(){
   let totOv=parseInt(st.totOv)||20;
   document.getElementById('batOv').textContent=`OVERS: ${ovPlayed} / ${totOv}`;
 
-  // 2. Center Box: Big Runs Number
   let evInfo=getEventLabel(st.lb);
   let lbEl=document.getElementById('lastBall');
   let subEl=document.getElementById('eventSubTag');
@@ -580,7 +590,6 @@ function render(){
   subEl.textContent=evInfo.sub;
   subEl.className='event-sub '+(evInfo.cls||'');
 
-  // 3. Right Wing: Bowling Team
   document.getElementById('bowlName').textContent=st.fN;
   document.getElementById('wR').style.background=makeGrad(st.c2||'#046a38');
   let totalMatchBalls=totOv*6;
@@ -597,7 +606,6 @@ function render(){
   }
   document.getElementById('bowlRemOv').textContent=`REM: ${remOvers} OV (${remBalls}B)`;
 
-  // 4. Bottom Bar & CRR
   document.getElementById('botTxt').textContent=st.t;
   document.getElementById('crrTxt').textContent=st.b>0?((st.r/st.b)*6).toFixed(2):'0.00';
 
@@ -609,12 +617,10 @@ function render(){
   setFlag('batFlag',st.bC,st.bN);
   setFlag('bowlFlag',st.fC,st.fN);
 
-  // Apply Background Class to BOTH <html> and <body> so Transparent works 100%!
   const activeBg=st.bg||'bg-transparent';
   document.documentElement.className=activeBg;
   document.body.className=activeBg+(panelOpen?' ctrl-open':'');
 
-  // Highlight active background button
   document.getElementById('btnBgTrans').classList.toggle('btn-active',activeBg==='bg-transparent');
   document.getElementById('btnBgGreen').classList.toggle('btn-active',activeBg==='bg-green');
   document.getElementById('btnBgDark').classList.toggle('btn-active',activeBg==='bg-dark');
@@ -636,7 +642,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v14',JSON.stringify(st));
+  localStorage.setItem('ck_st_v15',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -723,8 +729,8 @@ function nextDemo(){
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Transparent mode and persistent settings are locked and working!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Transparent mode and persistent settings are locked and working!'}));
+  speak('Gopakumar','Live score auto-update is unlocked and API key is saved!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live score auto-update is unlocked and API key is saved!'}));
 }
 
 // Persistent YouTube API Key & Live Chat
@@ -750,12 +756,12 @@ async function connectYT(isSilent=false){
   let v=extractVideoId(rawV);
   saveApiInputs();
   if(!k||!v)return;
-  if(!isSilent)document.getElementById('ytNote').textContent='Connecting & Locking API...';
+  if(!isSilent)document.getElementById('ytNote').textContent='Connecting YouTube API...';
   try{
     let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${v}&key=${k}`);
     let d=await r.json();ytChat=d.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
     if(!ytChat){document.getElementById('ytNote').textContent='Live chat not found (Check Video ID)';return;}
-    document.getElementById('ytNote').textContent='● Connected & Locked Until Changed!';
+    document.getElementById('ytNote').textContent='● YouTube API Connected & Saved';
     st.ai=true;render();sync();clearInterval(ytInt);
     ytInt=setInterval(async()=>{
       if(!ytChat||!st.ai)return;
@@ -766,9 +772,8 @@ async function connectYT(isSilent=false){
   }catch(e){document.getElementById('ytNote').textContent='Connection Error';}
 }
 
-// Restore saved state & saved API credentials permanently
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v14'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v15'));if(s)st={...st,...s};}catch(e){}
 
 const initKey=qp.get('key')||localStorage.getItem('yt_api_key')||'';
 const initVid=qp.get('vid')||localStorage.getItem('yt_video_id')||'';
@@ -794,7 +799,6 @@ render();
 fetchESPN(false);
 setInterval(()=>fetchESPN(true),10000);
 
-// Auto-reconnect YouTube Live Chat if API Key & Video ID were previously saved
 if(initKey&&initVid){
   connectYT(true);
 }
