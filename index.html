@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Full Complete v28</title>
+<title>Live Cricket Broadcast Overlay - Live Likes & Bell Sound v29</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -16,11 +16,12 @@ body.ctrl-open{overflow-y:auto;padding-bottom:155px}
 
 .overlay{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:98%;max-width:1120px;z-index:100;filter:drop-shadow(0 6px 14px rgba(0,0,0,.85))}
 
-/* Floating Like & Subscribe Banner */
+/* Floating Live Like Count & Subscribe Banner */
 .sub-banner{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:6px;padding-right:6px}
-.sub-pill{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(90deg,#cc0000,#ff1e1e);color:#fff;font-size:11px;font-weight:900;padding:4px 12px;border-radius:20px;border:1.5px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.85);letter-spacing:.5px;animation:pulseSub 2s infinite}
+.sub-pill{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(90deg,#cc0000,#ff1e1e);color:#fff;font-size:11px;font-weight:900;padding:4px 12px;border-radius:20px;border:1.5px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.85);letter-spacing:.5px;cursor:pointer;transition:transform .25s ease}
 .like-pill{background:linear-gradient(90deg,#1d4ed8,#2563eb)}
-@keyframes pulseSub{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.sub-ring{animation:ringBell .6s ease;background:linear-gradient(90deg,#eab308,#ca8a04) !important;color:#000 !important}
+@keyframes ringBell{0%{transform:scale(1) rotate(0deg)}25%{transform:scale(1.25) rotate(-12deg)}50%{transform:scale(1.25) rotate(12deg)}75%{transform:scale(1.15) rotate(-6deg)}100%{transform:scale(1) rotate(0deg)}}
 
 .top-bar{height:4px;background:linear-gradient(90deg,#b30000,#ff1e1e,#b30000);border-radius:6px 6px 0 0}
 .main{display:flex;height:82px;background:#0d1117;border-left:3px solid #d40000;border-right:3px solid #d40000}
@@ -113,7 +114,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
   </div>
 
   <div class="grp">
-    <label>2. Custom Team Names (Any World or Domestic Team) & Wing Colors</label>
+    <label>2. Custom Team Names & Wing Colors</label>
     <div class="row">
       <input type="text" id="custBat" placeholder="e.g. INDIA / KERALA / CSK" oninput="liveTypeTeams()">
       <input type="color" id="col1" value="#d4a000" onchange="liveTypeTeams()">
@@ -172,7 +173,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
   </div>
 
   <div class="grp">
-    <label>8. YouTube Data API v3 Key & Live Video ID</label>
+    <label>8. YouTube Data API v3 Key & Live Video ID (Shows Live Likes + Chat)</label>
     <div class="row" style="margin-bottom:5px">
       <input type="text" id="apiKeyInp" placeholder="Paste New Project API Key (AIzaSy...)" oninput="saveAndPushApi()">
       <button class="btn btn-r" onclick="clearSavedApi()">🗑️ Clear</button>
@@ -185,7 +186,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
   </div>
 
   <div class="grp row" style="justify-content:space-between;background:#1f2937;padding:8px 10px;border-radius:8px;margin-bottom:6px">
-    <span style="font-size:13px;font-weight:700">👍 Show Like & Subscribe Banner</span>
+    <span style="font-size:13px;font-weight:700">👍 Show Live Likes & Subscribe Banner</span>
     <input type="checkbox" id="subChk" checked style="width:20px;height:20px" onchange="toggleSubBanner(this.checked)">
   </div>
 
@@ -196,10 +197,11 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <div class="grp" style="margin-bottom:0">
     <div class="row">
-      <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Smooth Voice</button>
-      <button class="btn btn-d" style="flex:1" onclick="nextDemo()">▶ Next Demo</button>
+      <button class="btn btn-a" style="flex:1" onclick="triggerSubBell()">🔔 Subscribe Bell Sound</button>
+      <button class="btn btn-g" style="flex:1" onclick="testAI()">🔊 Test Voice</button>
+      <button class="btn btn-d" onclick="nextDemo()">▶ Next</button>
     </div>
-    <div class="note" id="soundStatusNote">Smooth Audio Mode (1.0x speed, no chopping)</div>
+    <div class="note" id="soundStatusNote">Live Likes update automatically when YouTube API is connected</div>
   </div>
 </div>
 
@@ -208,8 +210,8 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="overlay">
   <div class="sub-banner" id="subBanner">
-    <div class="sub-pill like-pill">👍 LIKE</div>
-    <div class="sub-pill">🔔 SUBSCRIBE</div>
+    <div class="sub-pill like-pill" id="likeCountPill">👍 LIKE</div>
+    <div class="sub-pill" id="subBellPill" onclick="triggerSubBell()">🔔 SUBSCRIBE</div>
   </div>
   <div class="top-bar"></div>
   <div class="main">
@@ -376,10 +378,10 @@ const BUILTIN_TEAMS=[
 let allTeams=[...BUILTIN_TEAMS];
 const qp=new URLSearchParams(location.search);
 const isControlMode=qp.get('control')==='1';
-let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,showSub:true,ts:0,manualLock:false,ytKey:'',ytVid:''};
+let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,showSub:true,likeCount:'',ts:0,manualLock:false,ytKey:'',ytVid:''};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v28_full';
+const TOPIC='cricket/live/kinggopan_v29_likesbell';
 let client=null;
 let panelOpen=isControlMode;
 let isMasterDevice=isControlMode;
@@ -702,8 +704,8 @@ function updatePrismUrlBox(){
     p.set('tot',st.totOv||20);
     if(st.oppSc)p.set('oppsc',st.oppSc);
   }
-  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v28')||'';
-  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v28')||'';
+  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v29')||'';
+  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v29')||'';
   if(savedKey)p.set('key',savedKey);
   if(savedVid)p.set('vid',extractVideoId(savedVid));
   p.set('bg',st.bg.replace('bg-',''));
@@ -780,6 +782,14 @@ function render(){
   document.getElementById('subChk').checked=showSub;
   document.getElementById('subBanner').style.display=showSub?'flex':'none';
 
+  // Live Like Counter Display
+  const likePill=document.getElementById('likeCountPill');
+  if(st.likeCount!==undefined&&st.likeCount!==''){
+    likePill.textContent=`👍 LIKES: ${Number(st.likeCount).toLocaleString()}`;
+  }else{
+    likePill.textContent='👍 LIKE';
+  }
+
   document.getElementById('aiChk').checked=st.ai;
   document.getElementById('dotAI').className='dot-r'+(st.ai?' on':'');
   updatePrismUrlBox();
@@ -816,7 +826,7 @@ function sync(){
   const v=document.getElementById('vidInp').value.trim();
   st.ytKey=k;
   st.ytVid=v;
-  localStorage.setItem('ck_st_v28',JSON.stringify(st));
+  localStorage.setItem('ck_st_v29',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -882,7 +892,7 @@ function openPanel(){unlockSound();panelOpen=true;isMasterDevice=true;document.g
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // ============================================================
-// SMOOTH NON-CHOPPING AUDIO ENGINE (1.0x SPEED + 400ms GAP)
+// SUBSCRIBE BELL CHIME + SMOOTH NON-CHOPPING AUDIO ENGINE
 // ============================================================
 const DEMOS=[
   {a:'Arjun',m:'What a massive sixer!'},
@@ -912,6 +922,55 @@ function unlockSound(){
 }
 window.addEventListener('load',unlockSound);
 window.addEventListener('pointerdown',unlockSound);
+
+// Synthesize Pleasant Ting-Tong Bell Sound + Voice Announcement
+function playBellTone(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!audioCtx)audioCtx=new AC();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const now=audioCtx.currentTime;
+
+    const playNote=(freq,start,dur)=>{
+      const osc=audioCtx.createOscillator();
+      const gain=audioCtx.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(freq,start);
+      gain.gain.setValueAtTime(0.001,start);
+      gain.gain.exponentialRampToValueAtTime(0.45,start+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001,start+dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(start);
+      osc.stop(start+dur);
+    };
+    playNote(1046.5,now,0.45);       // C6 (Ting)
+    playNote(1318.5,now+0.22,0.65);  // E6 (Tong)
+  }catch(e){}
+}
+
+function animateAndRingBell(announce=true){
+  playBellTone();
+  const pill=document.getElementById('subBellPill');
+  if(pill){
+    pill.classList.remove('sub-ring');
+    void pill.offsetWidth;
+    pill.classList.add('sub-ring');
+    setTimeout(()=>pill.classList.remove('sub-ring'),700);
+  }
+  if(announce){
+    speak('Reminder','Thank you for watching! Please like and subscribe to our channel!');
+  }
+}
+
+function triggerSubBell(){
+  unlockSound();
+  animateAndRingBell(true);
+  if(client&&client.connected){
+    client.publish(TOPIC,JSON.stringify({k:'BELL',sid:SENDER_ID}));
+  }
+}
 
 function speak(a,m){
   const cleanAuthor=(a||'Viewer').replace(/[^\w\s\u0D00-\u0D7F]/g,'').trim()||'Viewer';
@@ -996,14 +1055,14 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Like and Subscribe banner plus smooth voice active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Like and Subscribe banner plus smooth voice active!'}));
+  speak('Gopakumar','Live likes counter and subscribe bell are active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live likes counter and subscribe bell are active!'}));
 }
 
 // ============================================================
-// YOUTUBE DATA API v3 LIVE CHAT (QUOTA SAVER + CLEAR BUTTON)
+// YOUTUBE DATA API v3: LIVE CHAT + REAL-TIME LIKE COUNTER
 // ============================================================
-let ytChat=null,ytTok=null,ytInt=null,seen=new Set(),ytFirstBatchDone=false,activeYtKey='',activeYtVid='';
+let ytChat=null,ytTok=null,ytInt=null,ytStatsInt=null,seen=new Set(),ytFirstBatchDone=false,activeYtKey='',activeYtVid='';
 
 function extractVideoId(input){
   const val=(input||'').trim();
@@ -1013,27 +1072,40 @@ function extractVideoId(input){
 
 function clearSavedApi(){
   isMasterDevice=true;
-  clearInterval(ytInt);
+  clearInterval(ytInt);clearInterval(ytStatsInt);
   ytChat=null;activeYtKey='';activeYtVid='';
+  st.likeCount='';
   document.getElementById('apiKeyInp').value='';
-  localStorage.removeItem('yt_api_key_v28');
+  localStorage.removeItem('yt_api_key_v29');
   st.ytKey='';
   const note=document.getElementById('ytNote');
   note.style.color='#facc15';
   note.textContent='Cleared! Now paste your New Project API Key and tap Connect & Sync';
-  updatePrismUrlBox();
-  sync();
+  render();updatePrismUrlBox();sync();
 }
 
 function saveAndPushApi(){
   isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  localStorage.setItem('yt_api_key_v28',k);
-  localStorage.setItem('yt_video_id_v28',v);
+  localStorage.setItem('yt_api_key_v29',k);
+  localStorage.setItem('yt_video_id_v29',v);
   st.ytKey=k;st.ytVid=v;
   updatePrismUrlBox();
   sync();
+}
+
+async function fetchLiveLikeCount(v,k){
+  if(!isMasterDevice)return;
+  try{
+    let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${v}&key=${k}`);
+    let d=await r.json();
+    let likes=d.items?.[0]?.statistics?.likeCount;
+    if(likes!==undefined&&likes!==st.likeCount){
+      st.likeCount=likes;
+      render();sync();
+    }
+  }catch(e){}
 }
 
 async function connectYT(isSilent=false){
@@ -1063,10 +1135,10 @@ async function connectYT(isSilent=false){
 
   activeYtKey=k;activeYtVid=v;
   note.style.color='#facc15';
-  note.textContent='Connecting to YouTube API...';
+  note.textContent='Connecting to YouTube API (Fetching Likes & Live Chat)...';
 
   try{
-    let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${v}&key=${k}`);
+    let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,statistics&id=${v}&key=${k}`);
     let d=await r.json();
 
     if(d.error){
@@ -1092,20 +1164,27 @@ async function connectYT(isSilent=false){
       return;
     }
 
+    // Set initial Live Like Count
+    let initLikes=d.items[0]?.statistics?.likeCount;
+    if(initLikes!==undefined)st.likeCount=initLikes;
+
     ytChat=d.items[0]?.liveStreamingDetails?.activeLiveChatId;
     if(!ytChat){
-      note.style.color='#f87171';
-      note.textContent='❌ ഈ വീഡിയോയിൽ Live Chat ഓൺ അല്ല (അല്ലെങ്കിൽ ലൈവ് അവസാനിച്ചു).';
-      ytChat=null;activeYtKey='';
+      note.style.color='#facc15';
+      note.textContent='⚠️ Likes കാണിക്കുന്നുണ്ട്, പക്ഷേ ഈ വീഡിയോയിൽ Live Chat ഓൺ അല്ല.';
+      render();if(!isSilent)sync();
       return;
     }
 
     note.style.color='#34d399';
-    note.textContent='● Connected! പുതിയ ലൈവ് കമന്റുകൾ മാത്രം വായിക്കുന്നു (Quota Saver ON)';
+    note.textContent=`● Connected! Live Likes (${st.likeCount||0}) & New Chat Active`;
     st.ai=true;ytFirstBatchDone=false;seen.clear();ytTok=null;
     render();
     if(!isSilent)sync();
-    clearInterval(ytInt);
+    clearInterval(ytInt);clearInterval(ytStatsInt);
+
+    // Refresh Live Like Count every 15 seconds
+    ytStatsInt=setInterval(()=>fetchLiveLikeCount(v,k),15000);
 
     const pollChat=async()=>{
       if(!ytChat||!st.ai||!isMasterDevice)return;
@@ -1152,12 +1231,12 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v28'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v29'));if(s)st={...st,...s};}catch(e){}
 
-const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v28')||'';
-const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v28')||'';
-if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v28',initKey);st.ytKey=initKey;}
-if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v28',initVid);st.ytVid=initVid;}
+const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v29')||'';
+const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v29')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v29',initKey);st.ytKey=initKey;}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v29',initVid);st.ytVid=initVid;}
 
 if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();const db=resolveDomesticBadge(st.bN,st.bN);st.bC=resolveCountryFlag(st.bN,st.bN)||(db?db.code:st.bN.slice(0,3));st.manualLock=true;}
@@ -1196,7 +1275,7 @@ if(typeof mqtt!=='undefined'){
       let p=JSON.parse(msg.toString());
       if(p.sid===SENDER_ID)return;
       if(p.k==='ST'&&p.d){
-        const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,showSub:p.d.showSub,ytKey:p.d.ytKey,ytVid:p.d.ytVid});
+        const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,showSub:p.d.showSub,likeCount:p.d.likeCount,ytKey:p.d.ytKey,ytVid:p.d.ytVid});
         if(incomingHash===lastStateHash)return;
         lastStateHash=incomingHash;
 
@@ -1205,17 +1284,18 @@ if(typeof mqtt!=='undefined'){
         st={...st,...p.d};
         if(st.ytKey!==undefined){
           document.getElementById('apiKeyInp').value=st.ytKey;
-          localStorage.setItem('yt_api_key_v28',st.ytKey);
+          localStorage.setItem('yt_api_key_v29',st.ytKey);
         }
         if(st.ytVid!==undefined){
           document.getElementById('vidInp').value=st.ytVid;
-          localStorage.setItem('yt_video_id_v28',st.ytVid);
+          localStorage.setItem('yt_video_id_v29',st.ytVid);
         }
         document.getElementById('custBat').value=st.bN;
         document.getElementById('custBowl').value=st.fN;
         buildDropdown();
         render();
       }else if(p.k==='SP'){speak(p.a,p.m);}
+      else if(p.k==='BELL'){animateAndRingBell(false);}
     }catch(e){}
   });
 }
