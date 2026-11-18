@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Accurate Innings & CRR</title>
+<title>Live Cricket Broadcast Overlay - Country Flags & Auto Sync</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -30,8 +30,8 @@ body.ctrl-open{overflow-y:auto;padding-bottom:145px}
 .overs-badge.rem{color:#38bdf8;border-color:rgba(56,189,248,.4)}
 .bowl-lbl{color:#fff;font-size:20px;font-weight:900;text-shadow:2px 2px 4px rgba(0,0,0,.85);text-transform:uppercase;line-height:1.05}
 
-.flag{width:50px;height:50px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0}
-.flag img{width:100%;height:100%;object-fit:cover}
+.flag{width:52px;height:52px;border-radius:50%;background:#111827;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.7)}
+.flag img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* Big Center Runs / Wicket Display */
 .center-box{width:112px;background:radial-gradient(#1f2937,#05070a);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;overflow:hidden}
@@ -84,7 +84,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 @media(max-width:600px){
   .main{height:72px}.score{font-size:19px}.overs-badge{font-size:9px;padding:1px 5px}.bowl-lbl{font-size:15px}
-  .flag{width:38px;height:38px;font-size:11px}.center-box{width:82px}.ball{font-size:34px}.ball.c4,.ball.c6,.ball.cW{font-size:36px}.pill{font-size:9px;padding:1px 7px}
+  .flag{width:40px;height:40px;font-size:11px}.center-box{width:82px}.ball{font-size:34px}.ball.c4,.ball.c6,.ball.cW{font-size:36px}.pill{font-size:9px;padding:1px 7px}
 }
 </style>
 </head>
@@ -92,28 +92,28 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Cricket Controller (Auto Innings & CRR)</h3>
+    <h3>🎛️ Live Cricket Controller (Country Flags + Auto Sync)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
   </div>
 
   <!-- 1. Select Match / Teams -->
   <div class="grp">
-    <label>1. Select Match / Teams (Auto-Detects Batting & Bowling Sides)</label>
+    <label>1. Select Match / Teams (Auto-Detects Country Flags & Innings)</label>
     <div class="row">
       <select id="matchSel"></select>
       <button class="btn btn-a" onclick="fetchESPN(false)" title="Force Refresh Now">🔄</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Auto-Sync ON: Accurate Innings & CRR</div>
+    <div class="note" id="espnNote">Auto-Sync ON: Country Flags Enabled</div>
   </div>
 
   <!-- 2. Custom Team Names + Theme Colors -->
   <div class="grp">
-    <label>2. Team Names & Wing Colors</label>
+    <label>2. Team Names & Wing Colors (Type Country Name/Code for Flag)</label>
     <div class="row">
-      <input type="text" id="custBat" placeholder="Batting Team" oninput="liveTypeTeams()">
+      <input type="text" id="custBat" placeholder="e.g. INDIA / IND" oninput="liveTypeTeams()">
       <input type="color" id="col1" value="#d4a000" onchange="liveTypeTeams()">
-      <input type="text" id="custBowl" placeholder="Bowling Team" oninput="liveTypeTeams()">
+      <input type="text" id="custBowl" placeholder="e.g. PAKISTAN / PAK" oninput="liveTypeTeams()">
       <input type="color" id="col2" value="#046a38" onchange="liveTypeTeams()">
     </div>
   </div>
@@ -235,16 +235,47 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 </div>
 
 <script>
+// Comprehensive Country Name & Abbreviation -> ISO Flag Code Map
+const COUNTRY_ISO={
+  'INDIA':'in','IND':'in','IND-W':'in','IND-A':'in','INDIA A':'in','INDIA WOMEN':'in',
+  'AUSTRALIA':'au','AUS':'au','AUS-W':'au','AUS-A':'au',
+  'PAKISTAN':'pk','PAK':'pk','PAK-W':'pk','PAK-A':'pk',
+  'SRI LANKA':'lk','SL':'lk','SL-W':'lk','SL-A':'lk',
+  'ENGLAND':'gb-eng','ENG':'gb-eng','ENG-W':'gb-eng','ENG-A':'gb-eng',
+  'SOUTH AFRICA':'za','SA':'za','RSA':'za','SA-W':'za',
+  'NEW ZEALAND':'nz','NZ':'nz','NZ-W':'nz',
+  'BANGLADESH':'bd','BAN':'bd','BAN-W':'bd',
+  'AFGHANISTAN':'af','AFG':'af','AFG-W':'af',
+  'IRELAND':'ie','IRE':'ie','IRE-W':'ie',
+  'SCOTLAND':'gb-sct','SCO':'gb-sct',
+  'NETHERLANDS':'nl','NED':'nl',
+  'ZIMBABWE':'zw','ZIM':'zw',
+  'NEPAL':'np','NEP':'np',
+  'UAE':'ae','UNITED ARAB EMIRATES':'ae',
+  'OMAN':'om','OMA':'om',
+  'USA':'us','UNITED STATES':'us',
+  'CANADA':'ca','CAN':'ca',
+  'NAMIBIA':'na','NAM':'na',
+  'WEST INDIES':'bb','WI':'bb','BARBADOS':'bb',
+  'JAMAICA':'jm','JAM':'jm',
+  'TRINIDAD':'tt','TKR':'tt',
+  'GUYANA':'gy','GAW':'gy',
+  'HONG KONG':'hk','HK':'hk',
+  'KENYA':'ke','KEN':'ke',
+  'UGANDA':'ug','UGA':'ug',
+  'PAPUA NEW GUINEA':'pg','PNG':'pg'
+};
+
 const BUILTIN_TEAMS=[
-  {id:'auto-espn',lbl:'🔄 AUTO-SELECT LIVE ESPN MATCH [AUTO]',bN:'LOADING',bC:'IN',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'LIVE',fC:'AU',c2:'#046a38',oppSc:'',t:'SYNCING LIVE SCOREBOARD...'},
+  {id:'auto-espn',lbl:'🔄 AUTO-SELECT LIVE ESPN MATCH [AUTO]',bN:'INDIA',bC:'in',c1:'#0057b8',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'',t:'SYNCING LIVE SCOREBOARD...'},
   {id:'sl-pak',lbl:'SRI LANKA vs PAKISTAN - T20 [20 OV]',bN:'SRI LANKA',bC:'lk',c1:'#d4a000',r:66,w:5,b:74,totOv:20,lb:'2',fN:'PAKISTAN',fC:'pk',c2:'#046a38',oppSc:'',t:'PAK OPT TO BOWL'},
   {id:'ind-aus-chase',lbl:'INDIA vs AUSTRALIA - T20I [CHASE]',bN:'INDIA',bC:'in',c1:'#0057b8',r:148,w:3,b:92,totOv:20,lb:'6',fN:'AUSTRALIA',fC:'au',c2:'#eab308',oppSc:'185-7',t:'INDIA NEED 38 RUNS IN 28 BALLS'},
+  {id:'ind-pak',lbl:'INDIA vs PAKISTAN - CUP [LIVE]',bN:'INDIA',bC:'in',c1:'#0057b8',r:112,w:2,b:70,totOv:20,lb:'4',fN:'PAKISTAN',fC:'pk',c2:'#046a38',oppSc:'',t:'INDIA OPT TO BAT'},
+  {id:'eng-sa-odi',lbl:'ENGLAND vs SOUTH AFRICA - ODI [50 OV]',bN:'ENGLAND',bC:'gb-eng',c1:'#1e40af',r:215,w:6,b:210,totOv:50,lb:'1',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',oppSc:'',t:'ENG OPT TO BAT'},
+  {id:'nz-ban',lbl:'NEW ZEALAND vs BANGLADESH - T20I',bN:'NEW ZEALAND',bC:'nz',c1:'#1f2937',r:94,w:2,b:62,totOv:20,lb:'2',fN:'BANGLADESH',fC:'bd',c2:'#065f46',oppSc:'',t:'NZ OPT TO BAT'},
+  {id:'wi-afg',lbl:'WEST INDIES vs AFGHANISTAN - T20I',bN:'WEST INDIES',bC:'bb',c1:'#7f1d1d',r:88,w:3,b:58,totOv:20,lb:'6',fN:'AFGHANISTAN',fC:'af',c2:'#1d4ed8',oppSc:'',t:'WI OPT TO BAT'},
   {id:'csk-mi-chase',lbl:'CHENNAI (CSK) vs MUMBAI (MI) - IPL',bN:'CHENNAI',bC:'CSK',c1:'#eab308',r:156,w:4,b:98,totOv:20,lb:'4',fN:'MUMBAI',fC:'MI',c2:'#1d4ed8',oppSc:'192-6',t:'CSK NEED 37 RUNS IN 22 BALLS'},
-  {id:'rcb-kkr',lbl:'BENGALURU (RCB) vs KOLKATA (KKR) - IPL',bN:'BENGALURU',bC:'RCB',c1:'#dc2626',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KOLKATA',fC:'KKR',c2:'#581c87',oppSc:'',t:'TOSS AT 7:00 PM IST'},
-  {id:'srh-rr',lbl:'HYDERABAD (SRH) vs RAJASTHAN (RR) - IPL',bN:'HYDERABAD',bC:'SRH',c1:'#ea580c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'RAJASTHAN',fC:'RR',c2:'#db2777',oppSc:'',t:'IPL SCHEDULED MATCH'},
-  {id:'gt-lsg',lbl:'GUJARAT (GT) vs LUCKNOW (LSG) - IPL',bN:'GUJARAT',bC:'GT',c1:'#1e293b',r:0,w:0,b:0,totOv:20,lb:'0',fN:'LUCKNOW',fC:'LSG',c2:'#0284c7',oppSc:'',t:'IPL SCHEDULED MATCH'},
-  {id:'dc-pbks',lbl:'DELHI (DC) vs PUNJAB (PBKS) - IPL',bN:'DELHI',bC:'DC',c1:'#2563eb',r:0,w:0,b:0,totOv:20,lb:'0',fN:'PUNJAB',fC:'PBKS',c2:'#dc2626',oppSc:'',t:'IPL SCHEDULED MATCH'},
-  {id:'eng-sa-odi',lbl:'ENGLAND vs SOUTH AFRICA - ODI [50 OV]',bN:'ENGLAND',bC:'gb-eng',c1:'#1e40af',r:215,w:6,b:210,totOv:50,lb:'1',fN:'SOUTH AFRICA',fC:'za',c2:'#15803d',oppSc:'',t:'ENG OPT TO BAT'}
+  {id:'rcb-kkr',lbl:'BENGALURU (RCB) vs KOLKATA (KKR) - IPL',bN:'BENGALURU',bC:'RCB',c1:'#dc2626',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KOLKATA',fC:'KKR',c2:'#581c87',oppSc:'',t:'TOSS AT 7:00 PM IST'}
 ];
 
 let allTeams=[...BUILTIN_TEAMS];
@@ -253,9 +284,21 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[1],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v12_accurate';
+const TOPIC='cricket/live/kinggopan_v13_flags';
 let client=null;
 let panelOpen=isControlMode;
+
+function resolveCountryFlag(name,code){
+  const n=(name||'').trim().toUpperCase();
+  const c=(code||'').trim().toUpperCase();
+  if(COUNTRY_ISO[n])return COUNTRY_ISO[n];
+  if(COUNTRY_ISO[c])return COUNTRY_ISO[c];
+  for(const key of Object.keys(COUNTRY_ISO)){
+    if(key.length>3&&n.includes(key))return COUNTRY_ISO[key];
+  }
+  if(c.length===2||c==='GB-ENG'||c==='GB-SCT')return c.toLowerCase();
+  return null;
+}
 
 function oversToBalls(ovStr){
   if(!ovStr)return 0;
@@ -308,8 +351,14 @@ function liveTypeTeams(){
   let f=document.getElementById('custBowl').value.trim().toUpperCase();
   let c1=document.getElementById('col1').value;
   let c2=document.getElementById('col2').value;
-  if(b){st.bN=b;st.bC=b.slice(0,3);}
-  if(f){st.fN=f;st.fC=f.slice(0,3);}
+  if(b){
+    st.bN=b;
+    st.bC=resolveCountryFlag(b,b)||b.slice(0,3);
+  }
+  if(f){
+    st.fN=f;
+    st.fC=resolveCountryFlag(f,f)||f.slice(0,3);
+  }
   st.c1=c1;st.c2=c2;st.manualLock=true;st.ts=Date.now();
   st.t=`${st.bN} VS ${st.fN} - LIVE`;
   render();sync();
@@ -385,6 +434,7 @@ async function fetchESPN(isAuto=true){
       const parseComp=(c)=>{
         let name=(c.team?.shortDisplayName||c.team?.name||'TEAM').toUpperCase();
         let abbr=(c.team?.abbreviation||name.slice(0,3)).toUpperCase();
+        let iso=resolveCountryFlag(name,abbr)||abbr;
         let raw=String(c.score||'').trim();
         let runs=0,wkts=0,ovStr='',hasBatted=false,isBattingNow=false;
 
@@ -405,26 +455,18 @@ async function fetchESPN(isAuto=true){
           if(mOv)ovStr=mOv[1];
         }
         let balls=ovStr?oversToBalls(ovStr):0;
-        return {name,abbr,runs,wkts,ovStr,balls,hasBatted,isBattingNow};
+        return {name,abbr,iso,runs,wkts,ovStr,balls,hasBatted,isBattingNow};
       };
 
       let t0=parseComp(cs[0]),t1=parseComp(cs[1]);
       let bat=t0,bowl=t1;
 
-      // Correctly identify the active chasing/batting team!
-      if(t1.isBattingNow&&!t0.isBattingNow){
-        bat=t1;bowl=t0;
-      }else if(t0.isBattingNow&&!t1.isBattingNow){
-        bat=t0;bowl=t1;
-      }else if(t1.hasBatted&&!t0.hasBatted){
-        bat=t1;bowl=t0;
-      }else if(t0.hasBatted&&t1.hasBatted){
-        // If both teams have scores, the team with an incomplete/smaller over count is the one currently chasing!
-        if(t1.balls>0&&(t0.balls===0||t1.balls<t0.balls)){
-          bat=t1;bowl=t0;
-        }else if(t0.balls>0&&(t1.balls===0||t0.balls<t1.balls)){
-          bat=t0;bowl=t1;
-        }
+      if(t1.isBattingNow&&!t0.isBattingNow){bat=t1;bowl=t0;}
+      else if(t0.isBattingNow&&!t1.isBattingNow){bat=t0;bowl=t1;}
+      else if(t1.hasBatted&&!t0.hasBatted){bat=t1;bowl=t0;}
+      else if(t0.hasBatted&&t1.hasBatted){
+        if(t1.balls>0&&(t0.balls===0||t1.balls<t0.balls)){bat=t1;bowl=t0;}
+        else if(t0.balls>0&&(t1.balls===0||t0.balls<t1.balls)){bat=t0;bowl=t1;}
       }
 
       let fmtName=(comp?.format?.abbreviation||comp?.type?.abbreviation||ev.name||'T20').toUpperCase();
@@ -435,17 +477,13 @@ async function fetchESPN(isAuto=true){
       let oppSc=bowl.hasBatted?`${bowl.runs}-${bowl.wkts}`:'';
       let statusDetail=(ev.status?.type?.shortDetail||ev.status?.type?.detail||tag).toUpperCase();
 
-      // Calculate target message automatically if 2nd innings chase
       if(tag==='LIVE'&&bowl.hasBatted&&bowl.runs>0){
         let target=bowl.runs+1;
         let need=Math.max(0,target-bat.runs);
         let remB=Math.max(0,(totOv*6)-bat.balls);
-        if(need>0&&remB>0){
-          statusDetail=`${bat.name} NEED ${need} RUNS IN ${remB} BALLS`;
-        }
+        if(need>0&&remB>0)statusDetail=`${bat.name} NEED ${need} RUNS IN ${remB} BALLS`;
       }
 
-      // Preserve last run/wicket in center box unless score actually changed
       let detectedBall=st.lb||'1';
       if(st.id==='espn-'+ev.id&&st.bN===bat.name){
         if(bat.wkts>st.w)detectedBall='W';
@@ -455,8 +493,8 @@ async function fetchESPN(isAuto=true){
 
       list.push({
         id:'espn-'+ev.id,lbl:`${bat.name} vs ${bowl.name} [${tag} - ${totOv} OV]`,isLive:(tag==='LIVE'),
-        bN:bat.name,bC:bat.abbr,c1:'#1d4ed8',r:bat.runs,w:bat.wkts,b:bat.balls,totOv:totOv,
-        lb:detectedBall,fN:bowl.name,fC:bowl.abbr,c2:'#047857',oppSc:oppSc,
+        bN:bat.name,bC:bat.iso,c1:'#1d4ed8',r:bat.runs,w:bat.wkts,b:bat.balls,totOv:totOv,
+        lb:detectedBall,fN:bowl.name,fC:bowl.iso,c2:'#047857',oppSc:oppSc,
         t:statusDetail
       });
     }
@@ -517,7 +555,7 @@ function makeGrad(hex){
 }
 
 function render(){
-  // 1. Left Wing: Active Batting Team (Overs Increase +)
+  // 1. Left Wing: Active Batting Team
   document.getElementById('batName').textContent=st.bN;
   document.getElementById('wL').style.background=makeGrad(st.c1||'#d4a000');
   document.getElementById('batScore').textContent=`${st.r}-${st.w}`;
@@ -536,7 +574,7 @@ function render(){
   subEl.textContent=evInfo.sub;
   subEl.className='event-sub '+(evInfo.cls||'');
 
-  // 3. Right Wing: Bowling Team (Remaining Overs Minus -)
+  // 3. Right Wing: Bowling Team
   document.getElementById('bowlName').textContent=st.fN;
   document.getElementById('wR').style.background=makeGrad(st.c2||'#046a38');
   let totalMatchBalls=totOv*6;
@@ -553,17 +591,19 @@ function render(){
   }
   document.getElementById('bowlRemOv').textContent=`REM: ${remOvers} OV (${remBalls}B)`;
 
-  // 4. Bottom Bar & Accurate CRR
+  // 4. Bottom Bar & CRR
   document.getElementById('botTxt').textContent=st.t;
   document.getElementById('crrTxt').textContent=st.b>0?((st.r/st.b)*6).toFixed(2):'0.00';
 
-  // Sync Panel Inputs
   if(document.activeElement!==document.getElementById('inpRuns'))document.getElementById('inpRuns').value=st.r;
   if(document.activeElement!==document.getElementById('inpWkts'))document.getElementById('inpWkts').value=st.w;
   if(document.activeElement!==document.getElementById('inpOvers'))document.getElementById('inpOvers').value=ovPlayed;
   if(document.activeElement!==document.getElementById('inpOppScore'))document.getElementById('inpOppScore').value=st.oppSc||'';
 
-  setFlag('batFlag',st.bC,st.bN);setFlag('bowlFlag',st.fC,st.fN);
+  // Render Country Flags
+  setFlag('batFlag',st.bC,st.bN);
+  setFlag('bowlFlag',st.fC,st.fN);
+
   document.body.className=(st.bg||'bg-transparent')+(panelOpen?' ctrl-open':'');
   document.getElementById('aiChk').checked=st.ai;
   document.getElementById('dotAI').className='dot-r'+(st.ai?' on':'');
@@ -572,14 +612,17 @@ function render(){
 
 function setFlag(id,c,n){
   let el=document.getElementById(id);
-  let cl=(c||'').toLowerCase();
-  if(cl.length===2||cl==='gb-eng')el.innerHTML=`<img src="https://flagcdn.com/w160/${cl}.png" onerror="this.style.display='none';this.parentNode.textContent='${n.slice(0,3)}'">`;
-  else el.textContent=(c||n).slice(0,4).toUpperCase();
+  let iso=resolveCountryFlag(n,c);
+  if(iso){
+    el.innerHTML=`<img src="https://flagcdn.com/w160/${iso}.png" alt="${n}" onerror="this.style.display='none';this.parentNode.textContent='${n.slice(0,3)}'">`;
+  }else{
+    el.textContent=(c||n).slice(0,4).toUpperCase();
+  }
 }
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v12',JSON.stringify(st));
+  localStorage.setItem('ck_st_v13',JSON.stringify(st));
   if(client&&client.connected){
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
   }
@@ -653,8 +696,8 @@ function nextDemo(){
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  speak('Gopakumar','Batting team, opponent score, and CRR are now synced accurately!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Batting team, opponent score, and CRR are now synced accurately!'}));
+  speak('Gopakumar','Country flags and live cricket scoreboard are active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Country flags and live cricket scoreboard are active!'}));
 }
 
 // YouTube Chat
@@ -681,10 +724,10 @@ async function connectYT(){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v12'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v13'));if(s)st={...st,...s};}catch(e){}
 
-if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=st.bN.slice(0,3);st.manualLock=true;}
-if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=st.fN.slice(0,3);st.manualLock=true;}
+if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();st.bC=resolveCountryFlag(st.bN,st.bN)||st.bN.slice(0,3);st.manualLock=true;}
+if(qp.get('bowl')){st.fN=qp.get('bowl').toUpperCase();st.fC=resolveCountryFlag(st.fN,st.fN)||st.fN.slice(0,3);st.manualLock=true;}
 if(qp.get('c1'))st.c1='#'+qp.get('c1').replace('#','');
 if(qp.get('c2'))st.c2='#'+qp.get('c2').replace('#','');
 if(qp.get('tot'))st.totOv=parseInt(qp.get('tot'))||20;
