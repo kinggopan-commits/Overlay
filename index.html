@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Music & Safe Sync v30</title>
+<title>Live Cricket Broadcast Overlay - Persistent Music v31</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -90,7 +90,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 /* Background Music Box Styling */
 .music-box{background:#0f172a;border:1px solid #38bdf8;border-radius:10px;padding:10px;margin-bottom:10px}
 .music-box h4{font-size:12px;color:#38bdf8;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-.music-file-btn{display:inline-block;background:#1e293b;border:1px dashed #64748b;color:#e2e8f0;padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;width:100%;text-align:center;margin-bottom:6px}
+.music-file-btn{display:inline-block;background:#1e293b;border:1px dashed #64748b;color:#e2e8f0;padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;flex:1;text-align:center}
 .music-file-btn:hover{border-color:#38bdf8;color:#fff}
 input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
 
@@ -110,17 +110,20 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
     <button class="btn btn-r" style="padding:6px 12px;font-size:12px" onclick="hidePanel()">✖ Hide</button>
   </div>
 
-  <!-- NEW: BACKGROUND MUSIC PLAYER BOX -->
+  <!-- PERSISTENT BACKGROUND MUSIC PLAYER BOX -->
   <div class="music-box">
     <h4>
-      <span>🎵 Background Music Player</span>
+      <span>🎵 Background Music Player (Auto-Saved)</span>
       <span id="musicStatusTag" style="font-size:10px;color:#94a3b8">Stopped</span>
     </h4>
-    <label class="music-file-btn">
-      📂 Select Audio / MP3 File from Device
-      <input type="file" id="bgMusicInput" accept="audio/*" style="display:none" onchange="loadMusicFile(event)">
-    </label>
-    <div id="musicTrackName" style="font-size:11px;color:#facc15;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No track selected</div>
+    <div class="row" style="margin-bottom:6px">
+      <label class="music-file-btn">
+        📂 Select / Change Audio File
+        <input type="file" id="bgMusicInput" accept="audio/*" style="display:none" onchange="loadMusicFile(event)">
+      </label>
+      <button class="btn btn-r" onclick="clearSavedMusic()" title="Remove Saved Music">🗑️ Clear</button>
+    </div>
+    <div id="musicTrackName" style="font-size:11px;color:#facc15;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No track saved yet</div>
     <div class="row" style="margin-bottom:6px">
       <button class="btn btn-g" style="flex:1" id="btnMusicPlay" onclick="toggleBgMusic()">▶ Play</button>
       <button class="btn btn-r" onclick="stopBgMusic()">⏹ Stop</button>
@@ -130,7 +133,7 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
       <span style="font-size:11px;color:#9ca3af;white-space:nowrap">🔊 Vol: <b id="volLabel">40%</b></span>
       <input type="range" id="musicVolSlider" min="0" max="100" value="40" oninput="changeMusicVol(this.value)">
     </div>
-    <div class="note" style="color:#94a3b8;font-size:10px">Auto-Ducking: AI Voice സംസാരിക്കുമ്പോൾ മ്യൂസിക് ശബ്ദം തനിയെ കുറയും.</div>
+    <div class="note" style="color:#34d399;font-size:10px">✔ ഒരിക്കൽ സെലക്ട് ചെയ്താൽ പാട്ടും വോളിയവും സ്ഥിരമായി ഇവിടെ സേവ് ആയി കിടക്കും.</div>
   </div>
 
   <div class="grp">
@@ -413,7 +416,7 @@ const isControlMode=qp.get('control')==='1';
 let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,showSub:true,likeCount:'',ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v30_music';
+const TOPIC='cricket/live/kinggopan_v31_musicdb';
 let client=null;
 let panelOpen=isControlMode;
 let isMasterDevice=isControlMode;
@@ -421,42 +424,119 @@ let lastRemoteSyncTime=0;
 let lastStateHash='';
 
 // ============================================================
-// BACKGROUND MUSIC PLAYER LOGIC + AUTO DUCKING
+// PERSISTENT BACKGROUND MUSIC PLAYER (INDEXEDDB + AUTO-DUCK)
 // ============================================================
 const bgMusic=document.getElementById('bgMusicPlayer');
-let targetMusicVol=0.40;
+let savedVolPercent=parseInt(localStorage.getItem('bg_music_vol_v31')||'40');
+let savedLoopState=localStorage.getItem('bg_music_loop_v31')!=='false';
+let savedAutoPlay=localStorage.getItem('bg_music_autoplay_v31')==='true';
+let targetMusicVol=savedVolPercent/100;
 let isMusicPlaying=false;
+let currentBlobUrl=null;
+
 bgMusic.volume=targetMusicVol;
+bgMusic.loop=savedLoopState;
+document.getElementById('musicVolSlider').value=savedVolPercent;
+document.getElementById('volLabel').textContent=savedVolPercent+'%';
+const loopBtnInit=document.getElementById('btnMusicLoop');
+loopBtnInit.textContent=savedLoopState?'🔁 Loop: ON':'🔁 Loop: OFF';
+loopBtnInit.className=savedLoopState?'btn btn-active':'btn btn-d';
+
+function openMusicDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open('KinggopanOverlayMusicDB',1);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('tracks'))db.createObjectStore('tracks');
+    };
+    req.onsuccess=e=>resolve(e.target.result);
+    req.onerror=e=>reject(e);
+  });
+}
+
+async function saveTrackToDB(file){
+  try{
+    const db=await openMusicDB();
+    const tx=db.transaction('tracks','readwrite');
+    tx.objectStore('tracks').put({blob:file,name:file.name},'saved_bgm');
+  }catch(e){}
+}
+
+async function loadSavedTrackFromDB(){
+  try{
+    const db=await openMusicDB();
+    const tx=db.transaction('tracks','readonly');
+    const req=tx.objectStore('tracks').get('saved_bgm');
+    req.onsuccess=()=>{
+      const data=req.result;
+      if(data&&data.blob){
+        if(currentBlobUrl)URL.revokeObjectURL(currentBlobUrl);
+        currentBlobUrl=URL.createObjectURL(data.blob);
+        bgMusic.src=currentBlobUrl;
+        document.getElementById('musicTrackName').textContent='🎵 Saved: '+data.name;
+        const stTag=document.getElementById('musicStatusTag');
+        stTag.textContent='Ready (Tap to Play)';
+        stTag.style.color='#38bdf8';
+        if(savedAutoPlay)playBgMusic(true);
+      }
+    };
+  }catch(e){}
+}
+
+async function clearSavedMusic(){
+  stopBgMusic();
+  bgMusic.removeAttribute('src');
+  if(currentBlobUrl){URL.revokeObjectURL(currentBlobUrl);currentBlobUrl=null;}
+  localStorage.removeItem('bg_music_autoplay_v31');
+  savedAutoPlay=false;
+  document.getElementById('musicTrackName').textContent='No track saved yet';
+  document.getElementById('bgMusicInput').value='';
+  try{
+    const db=await openMusicDB();
+    const tx=db.transaction('tracks','readwrite');
+    tx.objectStore('tracks').delete('saved_bgm');
+  }catch(e){}
+}
 
 function loadMusicFile(e){
   const file=e.target.files[0];
   if(!file)return;
-  const url=URL.createObjectURL(file);
-  bgMusic.src=url;
-  document.getElementById('musicTrackName').textContent='🎵 '+file.name;
-  playBgMusic();
+  if(currentBlobUrl)URL.revokeObjectURL(currentBlobUrl);
+  currentBlobUrl=URL.createObjectURL(file);
+  bgMusic.src=currentBlobUrl;
+  document.getElementById('musicTrackName').textContent='🎵 Saved: '+file.name;
+  saveTrackToDB(file);
+  playBgMusic(false);
 }
 
-function playBgMusic(){
+function playBgMusic(isAutoResume=false){
   if(!bgMusic.src){
-    alert('ആദ്യം "Select Audio / MP3 File" ക്ലിക്ക് ചെയ്ത് ഒരു പാട്ട് തിരഞ്ഞെടുക്കുക.');
+    if(!isAutoResume)alert('ആദ്യം "Select / Change Audio File" ക്ലിക്ക് ചെയ്ത് ഒരു പാട്ട് തിരഞ്ഞെടുക്കുക.');
     return;
   }
   unlockSound();
   bgMusic.volume=speaking?Math.min(0.10,targetMusicVol*0.25):targetMusicVol;
   bgMusic.play().then(()=>{
     isMusicPlaying=true;
+    savedAutoPlay=true;
+    localStorage.setItem('bg_music_autoplay_v31','true');
     document.getElementById('btnMusicPlay').textContent='⏸ Pause';
     document.getElementById('btnMusicPlay').className='btn btn-a';
     const stTag=document.getElementById('musicStatusTag');
     stTag.textContent='● Playing';
     stTag.style.color='#34d399';
-  }).catch(()=>{});
+  }).catch(()=>{
+    const stTag=document.getElementById('musicStatusTag');
+    stTag.textContent='Tap Screen / Play';
+    stTag.style.color='#facc15';
+  });
 }
 
 function pauseBgMusic(){
   bgMusic.pause();
   isMusicPlaying=false;
+  savedAutoPlay=false;
+  localStorage.setItem('bg_music_autoplay_v31','false');
   document.getElementById('btnMusicPlay').textContent='▶ Play';
   document.getElementById('btnMusicPlay').className='btn btn-g';
   const stTag=document.getElementById('musicStatusTag');
@@ -466,13 +546,15 @@ function pauseBgMusic(){
 
 function toggleBgMusic(){
   if(isMusicPlaying)pauseBgMusic();
-  else playBgMusic();
+  else playBgMusic(false);
 }
 
 function stopBgMusic(){
   bgMusic.pause();
   bgMusic.currentTime=0;
   isMusicPlaying=false;
+  savedAutoPlay=false;
+  localStorage.setItem('bg_music_autoplay_v31','false');
   document.getElementById('btnMusicPlay').textContent='▶ Play';
   document.getElementById('btnMusicPlay').className='btn btn-g';
   const stTag=document.getElementById('musicStatusTag');
@@ -482,12 +564,14 @@ function stopBgMusic(){
 
 function toggleMusicLoop(){
   bgMusic.loop=!bgMusic.loop;
+  localStorage.setItem('bg_music_loop_v31',String(bgMusic.loop));
   const btn=document.getElementById('btnMusicLoop');
   btn.textContent=bgMusic.loop?'🔁 Loop: ON':'🔁 Loop: OFF';
   btn.className=bgMusic.loop?'btn btn-active':'btn btn-d';
 }
 
 function changeMusicVol(val){
+  localStorage.setItem('bg_music_vol_v31',String(val));
   targetMusicVol=Math.max(0,Math.min(1,parseInt(val)/100));
   document.getElementById('volLabel').textContent=val+'%';
   if(!speaking)bgMusic.volume=targetMusicVol;
@@ -501,6 +585,8 @@ function duckMusic(active){
   if(!isMusicPlaying)return;
   bgMusic.volume=active?Math.min(0.08,targetMusicVol*0.2):targetMusicVol;
 }
+
+loadSavedTrackFromDB();
 
 // ============================================================
 // TEAM FLAGS & OVERLAY LOGIC
@@ -934,9 +1020,8 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  localStorage.setItem('ck_st_v30',JSON.stringify(st));
+  localStorage.setItem('ck_st_v31',JSON.stringify(st));
   if(client&&client.connected){
-    // Safe payload: Do NOT publish ytKey or ytVid over public MQTT
     const {ytKey,ytVid,...safeState}=st;
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:safeState}),{retain:true});
   }
@@ -1012,6 +1097,10 @@ let dIdx=0,q=[],speaking=false,soundUnlocked=false,audioCtx=null;
 const audioPlayer=document.getElementById('ttsAudioPlayer');
 
 function unlockSound(){
+  // If user previously had music playing and browser blocked autoplay on refresh, resume on first tap
+  if(savedAutoPlay&&!isMusicPlaying&&bgMusic.src){
+    playBgMusic(true);
+  }
   if(soundUnlocked)return;
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
@@ -1100,7 +1189,7 @@ function speak(a,m){
 function runQ(){
   if(speaking||!q.length)return;
   speaking=true;
-  duckMusic(true); // Lower background music while speaking
+  duckMusic(true);
 
   let txt=q.shift();
   const statusNote=document.getElementById('soundStatusNote');
@@ -1112,7 +1201,7 @@ function runQ(){
     done=true;
     setTimeout(()=>{
       speaking=false;
-      if(!q.length)duckMusic(false); // Restore background music volume
+      if(!q.length)duckMusic(false);
       runQ();
     },400);
   };
@@ -1166,8 +1255,8 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Live likes counter and background music are active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live likes counter and background music are active!'}));
+  speak('Gopakumar','Live likes counter and saved background music are active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live likes counter and saved background music are active!'}));
 }
 
 // ============================================================
@@ -1187,7 +1276,7 @@ function clearSavedApi(){
   ytChat=null;activeYtKey='';activeYtVid='';
   st.likeCount='';
   document.getElementById('apiKeyInp').value='';
-  localStorage.removeItem('yt_api_key_v30');
+  localStorage.removeItem('yt_api_key_v31');
   const note=document.getElementById('ytNote');
   note.style.color='#facc15';
   note.textContent='Cleared! Now paste your New Project API Key and tap Connect & Sync';
@@ -1198,8 +1287,8 @@ function saveAndPushApi(){
   isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  localStorage.setItem('yt_api_key_v30',k);
-  localStorage.setItem('yt_video_id_v30',v);
+  localStorage.setItem('yt_api_key_v31',k);
+  localStorage.setItem('yt_video_id_v31',v);
   updatePrismUrlBox();
 }
 
@@ -1337,12 +1426,12 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v30'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v31'));if(s)st={...st,...s};}catch(e){}
 
-const initKey=qp.get('key')||localStorage.getItem('yt_api_key_v30')||'';
-const initVid=qp.get('vid')||localStorage.getItem('yt_video_id_v30')||'';
-if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v30',initKey);}
-if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v30',initVid);}
+const initKey=qp.get('key')||localStorage.getItem('yt_api_key_v31')||'';
+const initVid=qp.get('vid')||localStorage.getItem('yt_video_id_v31')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v31',initKey);}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v31',initVid);}
 
 if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();const db=resolveDomesticBadge(st.bN,st.bN);st.bC=resolveCountryFlag(st.bN,st.bN)||(db?db.code:st.bN.slice(0,3));st.manualLock=true;}
