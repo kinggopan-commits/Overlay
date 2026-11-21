@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Live Likes & Bell Sound v29</title>
+<title>Live Cricket Broadcast Overlay - Music & Safe Sync v30</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -12,7 +12,7 @@ html,body{width:100%;height:100%;background:transparent;font-family:'Arial Black
 html.bg-transparent,body.bg-transparent{background:transparent !important;background-color:rgba(0,0,0,0) !important}
 html.bg-green,body.bg-green{background:#00b140 !important}
 html.bg-dark,body.bg-dark{background:#0b0f19 !important}
-body.ctrl-open{overflow-y:auto;padding-bottom:155px}
+body.ctrl-open{overflow-y:auto;padding-bottom:165px}
 
 .overlay{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:98%;max-width:1120px;z-index:100;filter:drop-shadow(0 6px 14px rgba(0,0,0,.85))}
 
@@ -87,6 +87,13 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 .note{font-size:11px;color:#34d399;margin-top:4px;line-height:1.35}
 .url-out{background:#0f172a;border:1px dashed #38bdf8;padding:8px;border-radius:8px;font-size:11px;color:#e2e8f0;word-break:break-all;margin-top:6px;user-select:text}
 
+/* Background Music Box Styling */
+.music-box{background:#0f172a;border:1px solid #38bdf8;border-radius:10px;padding:10px;margin-bottom:10px}
+.music-box h4{font-size:12px;color:#38bdf8;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.music-file-btn{display:inline-block;background:#1e293b;border:1px dashed #64748b;color:#e2e8f0;padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;width:100%;text-align:center;margin-bottom:6px}
+.music-file-btn:hover{border-color:#38bdf8;color:#fff}
+input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
+
 @media(max-width:600px){
   .main{height:72px}.score{font-size:19px}.overs-badge{font-size:9px;padding:1px 5px}.bowl-lbl{font-size:15px}
   .flag{width:40px;height:40px;font-size:10px}.center-box{width:82px}.ball{font-size:34px}.ball.c4,.ball.c6,.ball.cW{font-size:36px}.pill{font-size:9px;padding:1px 7px}
@@ -101,6 +108,29 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <h3>🎛️ Live Controller</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
     <button class="btn btn-r" style="padding:6px 12px;font-size:12px" onclick="hidePanel()">✖ Hide</button>
+  </div>
+
+  <!-- NEW: BACKGROUND MUSIC PLAYER BOX -->
+  <div class="music-box">
+    <h4>
+      <span>🎵 Background Music Player</span>
+      <span id="musicStatusTag" style="font-size:10px;color:#94a3b8">Stopped</span>
+    </h4>
+    <label class="music-file-btn">
+      📂 Select Audio / MP3 File from Device
+      <input type="file" id="bgMusicInput" accept="audio/*" style="display:none" onchange="loadMusicFile(event)">
+    </label>
+    <div id="musicTrackName" style="font-size:11px;color:#facc15;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No track selected</div>
+    <div class="row" style="margin-bottom:6px">
+      <button class="btn btn-g" style="flex:1" id="btnMusicPlay" onclick="toggleBgMusic()">▶ Play</button>
+      <button class="btn btn-r" onclick="stopBgMusic()">⏹ Stop</button>
+      <button class="btn btn-active" id="btnMusicLoop" onclick="toggleMusicLoop()">🔁 Loop: ON</button>
+    </div>
+    <div class="row">
+      <span style="font-size:11px;color:#9ca3af;white-space:nowrap">🔊 Vol: <b id="volLabel">40%</b></span>
+      <input type="range" id="musicVolSlider" min="0" max="100" value="40" oninput="changeMusicVol(this.value)">
+    </div>
+    <div class="note" style="color:#94a3b8;font-size:10px">Auto-Ducking: AI Voice സംസാരിക്കുമ്പോൾ മ്യൂസിക് ശബ്ദം തനിയെ കുറയും.</div>
   </div>
 
   <div class="grp">
@@ -168,14 +198,14 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
   <div class="grp">
     <label>7. Copy Direct Link</label>
-    <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct Link (With API & Match)</button>
+    <button class="btn btn-g" style="width:100%" onclick="copyPrismUrl()">📋 Copy Direct Link (With Match Settings)</button>
     <div class="url-out" id="prismUrlBox"></div>
   </div>
 
   <div class="grp">
-    <label>8. YouTube Data API v3 Key & Live Video ID (Shows Live Likes + Chat)</label>
+    <label>8. YouTube Data API v3 Key & Live Video ID (Stored Safely on Device)</label>
     <div class="row" style="margin-bottom:5px">
-      <input type="text" id="apiKeyInp" placeholder="Paste New Project API Key (AIzaSy...)" oninput="saveAndPushApi()">
+      <input type="password" id="apiKeyInp" placeholder="Paste New Project API Key (AIzaSy...)" oninput="saveAndPushApi()">
       <button class="btn btn-r" onclick="clearSavedApi()">🗑️ Clear</button>
     </div>
     <div class="row">
@@ -207,6 +237,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
 
 <div class="toast" id="toast"></div>
 <audio id="ttsAudioPlayer" playsinline preload="auto"></audio>
+<audio id="bgMusicPlayer" playsinline loop preload="auto"></audio>
 
 <div class="overlay">
   <div class="sub-banner" id="subBanner">
@@ -221,7 +252,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
         <div class="score" id="batScore">0-0</div>
         <div class="overs-badge" id="batOv">OVERS: 0.0</div>
       </div>
-      <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/in.png"></div>
+      <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/in.png" alt="Flag"></div>
     </div>
 
     <div class="center-box" onclick="togglePanel()" title="Tap to Open/Close Settings">
@@ -232,7 +263,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     </div>
 
     <div class="wing-r" id="wR">
-      <div class="flag" id="bowlFlag"><img src="https://flagcdn.com/w160/au.png"></div>
+      <div class="flag" id="bowlFlag"><img src="https://flagcdn.com/w160/au.png" alt="Flag"></div>
       <div class="team-col right">
         <div class="pill" id="bowlName">AUSTRALIA</div>
         <div class="bowl-lbl" id="rightMainText">BOWLING</div>
@@ -245,6 +276,7 @@ input[type=color]{width:42px;height:34px;border:none;border-radius:6px;backgroun
     <div class="crr">CRR:<span id="crrTxt">0.00</span></div>
   </div>
 </div>
+
 <script>
 const COUNTRY_ISO={
   'INDIA':'in','IND':'in','IND-W':'in','IND-A':'in','INDIA A':'in','INDIA WOMEN':'in','INDIA U19':'in',
@@ -378,16 +410,101 @@ const BUILTIN_TEAMS=[
 let allTeams=[...BUILTIN_TEAMS];
 const qp=new URLSearchParams(location.search);
 const isControlMode=qp.get('control')==='1';
-let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,showSub:true,likeCount:'',ts:0,manualLock:false,ytKey:'',ytVid:''};
+let st={...BUILTIN_TEAMS[0],id:'auto-espn',bg:isControlMode?'bg-dark':'bg-transparent',ai:true,showSub:true,likeCount:'',ts:0,manualLock:false};
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v29_likesbell';
+const TOPIC='cricket/live/kinggopan_v30_music';
 let client=null;
 let panelOpen=isControlMode;
 let isMasterDevice=isControlMode;
 let lastRemoteSyncTime=0;
 let lastStateHash='';
 
+// ============================================================
+// BACKGROUND MUSIC PLAYER LOGIC + AUTO DUCKING
+// ============================================================
+const bgMusic=document.getElementById('bgMusicPlayer');
+let targetMusicVol=0.40;
+let isMusicPlaying=false;
+bgMusic.volume=targetMusicVol;
+
+function loadMusicFile(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const url=URL.createObjectURL(file);
+  bgMusic.src=url;
+  document.getElementById('musicTrackName').textContent='🎵 '+file.name;
+  playBgMusic();
+}
+
+function playBgMusic(){
+  if(!bgMusic.src){
+    alert('ആദ്യം "Select Audio / MP3 File" ക്ലിക്ക് ചെയ്ത് ഒരു പാട്ട് തിരഞ്ഞെടുക്കുക.');
+    return;
+  }
+  unlockSound();
+  bgMusic.volume=speaking?Math.min(0.10,targetMusicVol*0.25):targetMusicVol;
+  bgMusic.play().then(()=>{
+    isMusicPlaying=true;
+    document.getElementById('btnMusicPlay').textContent='⏸ Pause';
+    document.getElementById('btnMusicPlay').className='btn btn-a';
+    const stTag=document.getElementById('musicStatusTag');
+    stTag.textContent='● Playing';
+    stTag.style.color='#34d399';
+  }).catch(()=>{});
+}
+
+function pauseBgMusic(){
+  bgMusic.pause();
+  isMusicPlaying=false;
+  document.getElementById('btnMusicPlay').textContent='▶ Play';
+  document.getElementById('btnMusicPlay').className='btn btn-g';
+  const stTag=document.getElementById('musicStatusTag');
+  stTag.textContent='Paused';
+  stTag.style.color='#facc15';
+}
+
+function toggleBgMusic(){
+  if(isMusicPlaying)pauseBgMusic();
+  else playBgMusic();
+}
+
+function stopBgMusic(){
+  bgMusic.pause();
+  bgMusic.currentTime=0;
+  isMusicPlaying=false;
+  document.getElementById('btnMusicPlay').textContent='▶ Play';
+  document.getElementById('btnMusicPlay').className='btn btn-g';
+  const stTag=document.getElementById('musicStatusTag');
+  stTag.textContent='Stopped';
+  stTag.style.color='#94a3b8';
+}
+
+function toggleMusicLoop(){
+  bgMusic.loop=!bgMusic.loop;
+  const btn=document.getElementById('btnMusicLoop');
+  btn.textContent=bgMusic.loop?'🔁 Loop: ON':'🔁 Loop: OFF';
+  btn.className=bgMusic.loop?'btn btn-active':'btn btn-d';
+}
+
+function changeMusicVol(val){
+  targetMusicVol=Math.max(0,Math.min(1,parseInt(val)/100));
+  document.getElementById('volLabel').textContent=val+'%';
+  if(!speaking)bgMusic.volume=targetMusicVol;
+}
+
+bgMusic.onended=()=>{
+  if(!bgMusic.loop)stopBgMusic();
+};
+
+function duckMusic(active){
+  if(!isMusicPlaying)return;
+  bgMusic.volume=active?Math.min(0.08,targetMusicVol*0.2):targetMusicVol;
+}
+
+// ============================================================
+// TEAM FLAGS & OVERLAY LOGIC
+// ============================================================
 function resolveCountryFlag(name,code){
   const n=(name||'').trim().toUpperCase();
   const c=(code||'').trim().toUpperCase();
@@ -704,10 +821,6 @@ function updatePrismUrlBox(){
     p.set('tot',st.totOv||20);
     if(st.oppSc)p.set('oppsc',st.oppSc);
   }
-  const savedKey=st.ytKey||localStorage.getItem('yt_api_key_v29')||'';
-  const savedVid=st.ytVid||localStorage.getItem('yt_video_id_v29')||'';
-  if(savedKey)p.set('key',savedKey);
-  if(savedVid)p.set('vid',extractVideoId(savedVid));
   p.set('bg',st.bg.replace('bg-',''));
   let full=`${base}?${p.toString()}`;
   document.getElementById('prismUrlBox').textContent=full;
@@ -782,7 +895,6 @@ function render(){
   document.getElementById('subChk').checked=showSub;
   document.getElementById('subBanner').style.display=showSub?'flex':'none';
 
-  // Live Like Counter Display
   const likePill=document.getElementById('likeCountPill');
   if(st.likeCount!==undefined&&st.likeCount!==''){
     likePill.textContent=`👍 LIKES: ${Number(st.likeCount).toLocaleString()}`;
@@ -799,7 +911,7 @@ function setFlag(id,c,n){
   let el=document.getElementById(id);
   let iso=resolveCountryFlag(n,c);
   let dom=resolveDomesticBadge(n,c);
-  const targetKey=iso?( 'flag:'+iso ):( dom?('dom:'+dom.code):('txt:'+(c||n).slice(0,4).toUpperCase()) );
+  const targetKey=iso?('flag:'+iso):(dom?('dom:'+dom.code):('txt:'+(c||n).slice(0,4).toUpperCase()));
   if(el.dataset.flagKey===targetKey)return;
   el.dataset.flagKey=targetKey;
 
@@ -822,13 +934,11 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  const k=document.getElementById('apiKeyInp').value.trim();
-  const v=document.getElementById('vidInp').value.trim();
-  st.ytKey=k;
-  st.ytVid=v;
-  localStorage.setItem('ck_st_v29',JSON.stringify(st));
+  localStorage.setItem('ck_st_v30',JSON.stringify(st));
   if(client&&client.connected){
-    client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:st}),{retain:true});
+    // Safe payload: Do NOT publish ytKey or ytVid over public MQTT
+    const {ytKey,ytVid,...safeState}=st;
+    client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:safeState}),{retain:true});
   }
 }
 
@@ -888,7 +998,6 @@ function togglePanel(){
   document.getElementById('panel').classList.toggle('open',panelOpen);
   render();
 }
-function openPanel(){unlockSound();panelOpen=true;isMasterDevice=true;document.getElementById('panel').classList.add('open');render();}
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // ============================================================
@@ -923,7 +1032,6 @@ function unlockSound(){
 window.addEventListener('load',unlockSound);
 window.addEventListener('pointerdown',unlockSound);
 
-// Synthesize Pleasant Ting-Tong Bell Sound + Voice Announcement
 function playBellTone(){
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
@@ -945,8 +1053,8 @@ function playBellTone(){
       osc.start(start);
       osc.stop(start+dur);
     };
-    playNote(1046.5,now,0.45);       // C6 (Ting)
-    playNote(1318.5,now+0.22,0.65);  // E6 (Tong)
+    playNote(1046.5,now,0.45);
+    playNote(1318.5,now+0.22,0.65);
   }catch(e){}
 }
 
@@ -992,6 +1100,8 @@ function speak(a,m){
 function runQ(){
   if(speaking||!q.length)return;
   speaking=true;
+  duckMusic(true); // Lower background music while speaking
+
   let txt=q.shift();
   const statusNote=document.getElementById('soundStatusNote');
   if(statusNote)statusNote.textContent='🔊 Speaking: '+txt.slice(0,36);
@@ -1002,6 +1112,7 @@ function runQ(){
     done=true;
     setTimeout(()=>{
       speaking=false;
+      if(!q.length)duckMusic(false); // Restore background music volume
       runQ();
     },400);
   };
@@ -1055,8 +1166,8 @@ function nextDemo(){
 }
 function testAI(){
   unlockSound();
-  speak('Gopakumar','Live likes counter and subscribe bell are active!');
-  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live likes counter and subscribe bell are active!'}));
+  speak('Gopakumar','Live likes counter and background music are active!');
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Live likes counter and background music are active!'}));
 }
 
 // ============================================================
@@ -1076,8 +1187,7 @@ function clearSavedApi(){
   ytChat=null;activeYtKey='';activeYtVid='';
   st.likeCount='';
   document.getElementById('apiKeyInp').value='';
-  localStorage.removeItem('yt_api_key_v29');
-  st.ytKey='';
+  localStorage.removeItem('yt_api_key_v30');
   const note=document.getElementById('ytNote');
   note.style.color='#facc15';
   note.textContent='Cleared! Now paste your New Project API Key and tap Connect & Sync';
@@ -1088,11 +1198,9 @@ function saveAndPushApi(){
   isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  localStorage.setItem('yt_api_key_v29',k);
-  localStorage.setItem('yt_video_id_v29',v);
-  st.ytKey=k;st.ytVid=v;
+  localStorage.setItem('yt_api_key_v30',k);
+  localStorage.setItem('yt_video_id_v30',v);
   updatePrismUrlBox();
-  sync();
 }
 
 async function fetchLiveLikeCount(v,k){
@@ -1164,7 +1272,6 @@ async function connectYT(isSilent=false){
       return;
     }
 
-    // Set initial Live Like Count
     let initLikes=d.items[0]?.statistics?.likeCount;
     if(initLikes!==undefined)st.likeCount=initLikes;
 
@@ -1183,7 +1290,6 @@ async function connectYT(isSilent=false){
     if(!isSilent)sync();
     clearInterval(ytInt);clearInterval(ytStatsInt);
 
-    // Refresh Live Like Count every 15 seconds
     ytStatsInt=setInterval(()=>fetchLiveLikeCount(v,k),15000);
 
     const pollChat=async()=>{
@@ -1231,12 +1337,12 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(localStorage.getItem('ck_st_v29'));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(localStorage.getItem('ck_st_v30'));if(s)st={...st,...s};}catch(e){}
 
-const initKey=qp.get('key')||st.ytKey||localStorage.getItem('yt_api_key_v29')||'';
-const initVid=qp.get('vid')||st.ytVid||localStorage.getItem('yt_video_id_v29')||'';
-if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v29',initKey);st.ytKey=initKey;}
-if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v29',initVid);st.ytVid=initVid;}
+const initKey=qp.get('key')||localStorage.getItem('yt_api_key_v30')||'';
+const initVid=qp.get('vid')||localStorage.getItem('yt_video_id_v30')||'';
+if(initKey){document.getElementById('apiKeyInp').value=initKey;localStorage.setItem('yt_api_key_v30',initKey);}
+if(initVid){document.getElementById('vidInp').value=initVid;localStorage.setItem('yt_video_id_v30',initVid);}
 
 if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();const db=resolveDomesticBadge(st.bN,st.bN);st.bC=resolveCountryFlag(st.bN,st.bN)||(db?db.code:st.bN.slice(0,3));st.manualLock=true;}
@@ -1275,21 +1381,13 @@ if(typeof mqtt!=='undefined'){
       let p=JSON.parse(msg.toString());
       if(p.sid===SENDER_ID)return;
       if(p.k==='ST'&&p.d){
-        const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,showSub:p.d.showSub,likeCount:p.d.likeCount,ytKey:p.d.ytKey,ytVid:p.d.ytVid});
+        const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,showSub:p.d.showSub,likeCount:p.d.likeCount});
         if(incomingHash===lastStateHash)return;
         lastStateHash=incomingHash;
 
         lastRemoteSyncTime=Date.now();
         isMasterDevice=false;
         st={...st,...p.d};
-        if(st.ytKey!==undefined){
-          document.getElementById('apiKeyInp').value=st.ytKey;
-          localStorage.setItem('yt_api_key_v29',st.ytKey);
-        }
-        if(st.ytVid!==undefined){
-          document.getElementById('vidInp').value=st.ytVid;
-          localStorage.setItem('yt_video_id_v29',st.ytVid);
-        }
         document.getElementById('custBat').value=st.bN;
         document.getElementById('custBowl').value=st.fN;
         buildDropdown();
