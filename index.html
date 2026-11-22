@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Pro Broadcast v37</title>
+<title>Live Cricket Broadcast Overlay - Pro Broadcast v38</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -136,7 +136,7 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Controller (v37 Fixed)</h3>
+    <h3>🎛️ Live Controller (v38 CORS-Bypass)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
     <button class="btn btn-r" style="padding:6px 12px;font-size:12px" onclick="hidePanel()">✖ Hide</button>
   </div>
@@ -440,7 +440,7 @@ const DOMESTIC_BADGES={
 };
 
 const BUILTIN_TEAMS=[
-  {id:'auto-espn',lbl:'🔄 AUTO-SELECT LIVE / UPCOMING ESPN MATCH [AUTO]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AUSTRALIA',fC:'au',c2:'#991b1b',oppSc:'',t:'SYNCING LIVE & UPCOMING MATCHES...'},
+  {id:'auto-espn',lbl:'🔄 AUTO-SELECT LIVE / UPCOMING MATCH [AUTO]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AUSTRALIA',fC:'au',c2:'#991b1b',oppSc:'',t:'SYNCING LIVE & UPCOMING MATCHES...'},
   {id:'ind-aus',lbl:'🌍 INDIA vs AUSTRALIA [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AUSTRALIA',fC:'au',c2:'#991b1b',oppSc:'',t:'IND OPT TO BOWL'},
   {id:'ind-pak',lbl:'🌍 INDIA vs PAKISTAN [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'PAKISTAN',fC:'pk',c2:'#991b1b',oppSc:'',t:'INDIA vs PAKISTAN - LIVE'},
   {id:'ind-eng',lbl:'🌍 INDIA vs ENGLAND [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'ENGLAND',fC:'gb-eng',c2:'#991b1b',oppSc:'',t:'INDIA vs ENGLAND - LIVE'},
@@ -472,8 +472,7 @@ let st={
 };
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-// Unique Room ID so old/other broadcasts never overwrite your score!
-const ROOM_ID=qp.get('room')||'kinggopan_v37_live';
+const ROOM_ID=qp.get('room')||'kinggopan_v38_live';
 const TOPIC='cricket/live/'+ROOM_ID;
 let client=null;
 let panelOpen=isControlMode;
@@ -483,10 +482,10 @@ let lastStateHash='';
 // BACKGROUND MUSIC PLAYER
 // ============================================================
 const bgMusic=document.getElementById('bgMusicPlayer');
-let savedVolPercent=parseInt(safeGet('bg_music_vol_v37','40'))||40;
-let savedLoopState=safeGet('bg_music_loop_v37','true')!=='false';
-let savedMusicUrl=safeGet('bg_music_url_v37','');
-let savedAutoPlay=safeGet('bg_music_autoplay_v37','false')==='true';
+let savedVolPercent=parseInt(safeGet('bg_music_vol_v38','40'))||40;
+let savedLoopState=safeGet('bg_music_loop_v38','true')!=='false';
+let savedMusicUrl=safeGet('bg_music_url_v38','');
+let savedAutoPlay=safeGet('bg_music_autoplay_v38','false')==='true';
 let targetMusicVol=savedVolPercent/100;
 let isMusicPlaying=false;
 let currentBlobUrl=null;
@@ -507,11 +506,11 @@ if(savedMusicUrl){
   document.getElementById('musicStatusTag').style.color='#38bdf8';
 }
 
-function saveMusicUrl(){safeSet('bg_music_url_v37',document.getElementById('musicUrlInp').value.trim());}
+function saveMusicUrl(){safeSet('bg_music_url_v38',document.getElementById('musicUrlInp').value.trim());}
 function loadMusicFromUrl(){
   const u=document.getElementById('musicUrlInp').value.trim();
   if(!u){alert('ദയവായി ഒരു Direct MP3 Link പേസ്റ്റ് ചെയ്യുക.');return;}
-  safeSet('bg_music_url_v37',u);
+  safeSet('bg_music_url_v38',u);
   if(currentBlobUrl){try{URL.revokeObjectURL(currentBlobUrl);}catch(e){} currentBlobUrl=null;}
   bgMusic.src=u;
   document.getElementById('musicTrackName').textContent='🎵 URL: '+u;
@@ -532,7 +531,7 @@ function clearSavedMusic(){
   stopBgMusic();
   bgMusic.removeAttribute('src');
   if(currentBlobUrl){try{URL.revokeObjectURL(currentBlobUrl);}catch(e){} currentBlobUrl=null;}
-  safeDel('bg_music_url_v37');safeDel('bg_music_autoplay_v37');savedAutoPlay=false;
+  safeDel('bg_music_url_v38');safeDel('bg_music_autoplay_v38');savedAutoPlay=false;
   document.getElementById('musicUrlInp').value='';document.getElementById('bgMusicInput').value='';
   document.getElementById('musicTrackName').textContent='No track selected';
 }
@@ -540,7 +539,7 @@ function playBgMusic(isAuto=false){
   if(!bgMusic.src){if(!isAuto)alert('ആദ്യം ഒരു MP3 ഫയലോ ലിങ്കോ തിരഞ്ഞെടുക്കുക.');return;}
   bgMusic.volume=speaking?Math.min(0.10,targetMusicVol*0.25):targetMusicVol;
   bgMusic.play().then(()=>{
-    isMusicPlaying=true;savedAutoPlay=true;safeSet('bg_music_autoplay_v37','true');
+    isMusicPlaying=true;savedAutoPlay=true;safeSet('bg_music_autoplay_v38','true');
     document.getElementById('btnMusicPlay').textContent='⏸ Pause';document.getElementById('btnMusicPlay').className='btn btn-a';
     const stTag=document.getElementById('musicStatusTag');stTag.textContent='● Playing';stTag.style.color='#34d399';
   }).catch(()=>{
@@ -548,24 +547,24 @@ function playBgMusic(isAuto=false){
   });
 }
 function pauseBgMusic(){
-  bgMusic.pause();isMusicPlaying=false;savedAutoPlay=false;safeSet('bg_music_autoplay_v37','false');
+  bgMusic.pause();isMusicPlaying=false;savedAutoPlay=false;safeSet('bg_music_autoplay_v38','false');
   document.getElementById('btnMusicPlay').textContent='▶ Play';document.getElementById('btnMusicPlay').className='btn btn-g';
   const stTag=document.getElementById('musicStatusTag');stTag.textContent='Paused';stTag.style.color='#facc15';
 }
 function toggleBgMusic(){if(isMusicPlaying)pauseBgMusic();else playBgMusic(false);}
 function stopBgMusic(){
   bgMusic.pause();try{bgMusic.currentTime=0;}catch(e){}
-  isMusicPlaying=false;savedAutoPlay=false;safeSet('bg_music_autoplay_v37','false');
+  isMusicPlaying=false;savedAutoPlay=false;safeSet('bg_music_autoplay_v38','false');
   document.getElementById('btnMusicPlay').textContent='▶ Play';document.getElementById('btnMusicPlay').className='btn btn-g';
   const stTag=document.getElementById('musicStatusTag');stTag.textContent='Stopped';stTag.style.color='#94a3b8';
 }
 function toggleMusicLoop(){
-  bgMusic.loop=!bgMusic.loop;safeSet('bg_music_loop_v37',String(bgMusic.loop));
+  bgMusic.loop=!bgMusic.loop;safeSet('bg_music_loop_v38',String(bgMusic.loop));
   const btn=document.getElementById('btnMusicLoop');
   btn.textContent=bgMusic.loop?'🔁 Loop: ON':'🔁 Loop: OFF';btn.className=bgMusic.loop?'btn btn-active':'btn btn-d';
 }
 function changeMusicVol(val){
-  safeSet('bg_music_vol_v37',String(val));targetMusicVol=Math.max(0,Math.min(1,parseInt(val)/100));
+  safeSet('bg_music_vol_v38',String(val));targetMusicVol=Math.max(0,Math.min(1,parseInt(val)/100));
   document.getElementById('volLabel').textContent=val+'%';if(!speaking)bgMusic.volume=targetMusicVol;
 }
 bgMusic.onended=()=>{if(!bgMusic.loop)stopBgMusic();};
@@ -727,13 +726,43 @@ function liveTypeTicker(){
 function toggleSubBanner(on){st.showSub=on;render();sync();}
 
 // ============================================================
-// FAST & DIRECT ESPN LIVE SCORE ENGINE (FIXED v37)
+// JSONP + MULTI-GATEWAY CORS BYPASS ENGINE (v38)
 // ============================================================
+function fetchJsonp(url, timeout = 6000) {
+  return new Promise((resolve) => {
+    const cbName = 'espn_cb_' + Math.random().toString(36).slice(2, 10);
+    const script = document.createElement('script');
+    let timer = setTimeout(() => {
+      cleanup();
+      resolve(null);
+    }, timeout);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    const sep = url.includes('?') ? '&' : '?';
+    script.src = `${url}${sep}callback=${cbName}&_=${Date.now()}`;
+    script.onerror = () => {
+      cleanup();
+      resolve(null);
+    };
+    document.head.appendChild(script);
+  });
+}
+
 async function fetchWithTimeout(url, ms = 5000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
   try {
-    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+    const res = await fetch(url, { signal: controller.signal });
     clearTimeout(id);
     if (res.ok) return await res.json();
   } catch (e) {
@@ -742,22 +771,26 @@ async function fetchWithTimeout(url, ms = 5000) {
   return null;
 }
 
-async function fetchJsonDirectFirst(url) {
-  let bust = `${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+async function fetchESPNSmart(apiUrl) {
+  // 1. JSONP Bypass (100% Immune to GitHub Pages CORS restrictions!)
+  let jsonpData = await fetchJsonp(apiUrl, 5500);
+  if (jsonpData && (jsonpData.events || jsonpData.scores)) return jsonpData;
 
-  // 1. DIRECT FETCH FIRST (ESPN supports CORS directly & responds in <300ms!)
+  // 2. Direct Fetch
+  let bust = `${apiUrl}?_t=${Date.now()}`;
   let direct = await fetchWithTimeout(bust, 4500);
   if (direct) return direct;
 
-  // 2. FALLBACK PROXIES ONLY IF DIRECT FAILS
-  try {
-    let aoRes = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(bust)}`, 5500);
-    if (aoRes && aoRes.contents) return JSON.parse(aoRes.contents);
-  } catch (e) {}
-
-  let codetabs = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bust)}`, 5000);
-  if (codetabs) return codetabs;
-
+  // 3. Reliable CORS Gateways
+  const gateways = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(bust)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(bust)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bust)}`
+  ];
+  for (let g of gateways) {
+    let res = await fetchWithTimeout(g, 5000);
+    if (res) return res;
+  }
   return null;
 }
 
@@ -769,7 +802,6 @@ function parseTeamData(c) {
 
   let runs = 0, wkts = 0, ovStr = '', hasBatted = false, isBattingNow = false;
 
-  // Parse linescores (most accurate for ESPN Cricket)
   if (Array.isArray(c.linescores) && c.linescores.length > 0) {
     let lastInn = c.linescores[c.linescores.length - 1];
     if (lastInn.runs !== undefined) { runs = parseInt(lastInn.runs) || 0; hasBatted = true; }
@@ -778,11 +810,9 @@ function parseTeamData(c) {
     if (lastInn.isBatting === true) isBattingNow = true;
   }
 
-  // Fallback / override from c.score string (e.g., "185/4 (18.2 ov)" or "240/8")
   let raw = String(c.score || '').trim();
   if (raw && raw !== '0' && raw !== '0/0') {
     hasBatted = true;
-    // Handle multi-innings like "250 & 120/3" -> take latest
     let parts = raw.split('&');
     let latestScore = parts[parts.length - 1].trim();
     let mSc = latestScore.match(/(\d+)[\/\-](\d+)/);
@@ -808,13 +838,13 @@ async function fetchESPN(isAuto = true) {
   const noteEl = document.getElementById('espnNote');
   if (!isAuto) {
     noteEl.style.color = '#facc15';
-    noteEl.textContent = '⏳ Fetching Live Scores directly from ESPN...';
+    noteEl.textContent = '⏳ Fetching Live Scores (CORS Bypass)...';
   }
 
   let eventsMap = new Map();
   const [d, sp] = await Promise.all([
-    fetchJsonDirectFirst('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard'),
-    fetchJsonDirectFirst('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel')
+    fetchESPNSmart('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard'),
+    fetchESPNSmart('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel')
   ]);
 
   if (d && Array.isArray(d.events)) {
@@ -829,14 +859,13 @@ async function fetchESPN(isAuto = true) {
   let events = Array.from(eventsMap.values());
   if (!events.length) {
     noteEl.style.color = '#f87171';
-    noteEl.textContent = '⚠️ ESPN ഡാറ്റ ലഭിച്ചില്ല. ഇന്റർനെറ്റ് പരിശോധിക്കുക അല്ലെങ്കിൽ 🔄 Refresh അമർത്തുക.';
+    noteEl.textContent = '⚠️ ലൈവ് സെർവർ തിരക്കിലാണ്. താഴെ Manual Pad ഉപയോഗിച്ച് സ്കോർ നൽകാം.';
     return;
   }
 
   let list = [];
   events.forEach(ev => {
     let state = (ev.status?.type?.state || '').toLowerCase();
-    // Skip completed matches unless no live/upcoming matches exist
     if (state === 'post' || ev.status?.type?.completed === true) return;
 
     let isLive = (state === 'in');
@@ -926,7 +955,7 @@ async function fetchESPN(isAuto = true) {
   let liveCount = list.filter(x => x.isLive).length;
   let upCount = list.filter(x => !x.isLive).length;
   noteEl.style.color = '#34d399';
-  noteEl.textContent = `● Updated: ${liveCount} Live & ${upCount} Upcoming Matches (${now})`;
+  noteEl.textContent = `● Connected! ${liveCount} Live & ${upCount} Upcoming Matches (${now})`;
 }
 
 function getCenterEventDisplay(val){
@@ -1113,7 +1142,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  safeSet('ck_st_v37',JSON.stringify(st));
+  safeSet('ck_st_v38',JSON.stringify(st));
   if(client&&client.connected){
     const {ytKey,ytVid,...safeState}=st;
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:safeState}),{retain:true});
@@ -1327,7 +1356,7 @@ function extractVideoId(input){
 
 function clearSavedApi(){
   clearInterval(ytInt);clearInterval(ytStatsInt);ytChat=null;activeYtKey='';activeYtVid='';st.likeCount='';
-  document.getElementById('apiKeyInp').value='';safeDel('yt_api_key_v37');
+  document.getElementById('apiKeyInp').value='';safeDel('yt_api_key_v38');
   const note=document.getElementById('ytNote');note.style.color='#facc15';
   note.textContent='Cleared! Now paste your New Project API Key and tap Connect & Sync';
   render();updatePrismUrlBox();sync();
@@ -1336,7 +1365,7 @@ function clearSavedApi(){
 function saveAndPushApi(){
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  safeSet('yt_api_key_v37',k);safeSet('yt_video_id_v37',v);updatePrismUrlBox();
+  safeSet('yt_api_key_v38',k);safeSet('yt_video_id_v38',v);updatePrismUrlBox();
 }
 
 async function fetchLiveLikeCount(v,k){
@@ -1432,13 +1461,13 @@ async function connectYT(isSilent=false){
 }
 
 buildDropdown();
-try{let s=JSON.parse(safeGet('ck_st_v37',''));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(safeGet('ck_st_v38',''));if(s)st={...st,...s};}catch(e){}
 st.manualLock = false;
 
-const initKey=qp.get('key')||safeGet('yt_api_key_v37','');
-const initVid=qp.get('vid')||safeGet('yt_video_id_v37','');
-if(initKey){document.getElementById('apiKeyInp').value=initKey;safeSet('yt_api_key_v37',initKey);}
-if(initVid){document.getElementById('vidInp').value=initVid;safeSet('yt_video_id_v37',initVid);}
+const initKey=qp.get('key')||safeGet('yt_api_key_v38','');
+const initVid=qp.get('vid')||safeGet('yt_video_id_v38','');
+if(initKey){document.getElementById('apiKeyInp').value=initKey;safeSet('yt_api_key_v38',initKey);}
+if(initVid){document.getElementById('vidInp').value=initVid;safeSet('yt_video_id_v38',initVid);}
 
 if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();const db=resolveDomesticBadge(st.bN,st.bN);st.bC=resolveCountryFlag(st.bN,st.bN)||(db?db.code:st.bN.slice(0,3));st.manualLock=true;}
@@ -1479,7 +1508,6 @@ if(typeof mqtt!=='undefined'){
         let p=JSON.parse(msg.toString());
         if(p.sid===SENDER_ID)return;
         if(p.k==='ST'&&p.d){
-          // Ignore stale retained messages older than our current state
           if(p.d.ts && st.ts && p.d.ts < st.ts) return;
           const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,showSub:p.d.showSub,likeCount:p.d.likeCount,brand:p.d.brand,prevBalls:p.d.prevBalls,currBalls:p.d.currBalls});
           if(incomingHash===lastStateHash)return;
