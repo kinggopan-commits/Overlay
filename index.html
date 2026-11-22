@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Pro Broadcast v34</title>
+<title>Live Cricket Broadcast Overlay - Pro Broadcast v35</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -23,7 +23,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:185px}
 .sub-ring{animation:ringBell .6s ease;background:linear-gradient(90deg,#eab308,#ca8a04) !important;color:#000 !important}
 @keyframes ringBell{0%{transform:scale(1) rotate(0deg)}25%{transform:scale(1.25) rotate(-12deg)}50%{transform:scale(1.25) rotate(12deg)}75%{transform:scale(1.15) rotate(-6deg)}100%{transform:scale(1) rotate(0deg)}}
 
-/* Main Broadcast Container matching reference image */
+/* Main Broadcast Container */
 .broadcast-box{border-radius:8px;overflow:hidden;border:1.5px solid rgba(255,255,255,.25);background:#14031c}
 .top-red-line{height:4px;background:linear-gradient(90deg,#990000,#ff1e1e,#990000)}
 
@@ -47,7 +47,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:185px}
 .big-bowl{color:#ffffff;font-size:36px;font-weight:900;line-height:1.05;text-shadow:2px 3px 6px rgba(0,0,0,.9);white-space:nowrap;letter-spacing:1px;margin-top:4px}
 .yellow-ov{color:#facc15;font-size:16px;font-weight:900;font-style:italic;line-height:1;text-shadow:1px 2px 4px rgba(0,0,0,.95);white-space:nowrap}
 
-/* Center Event Box (WIDE / 4 / 6 / W / 0) */
+/* Center Event Box */
 .center-box{width:165px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;padding:0 6px;z-index:1}
 .brand-pill{background:rgba(0,0,0,.6);border:1px solid rgba(250,204,21,.5);color:#e5e7eb;font-size:8px;font-weight:800;padding:1px 8px;border-radius:10px;letter-spacing:.6px;margin-bottom:2px;text-transform:uppercase}
 .center-event{color:#ffffff;font-size:42px;font-weight:900;line-height:1;text-shadow:0 4px 14px rgba(0,0,0,.95);letter-spacing:.5px;text-align:center;white-space:nowrap}
@@ -178,7 +178,7 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
       <button class="btn btn-a" onclick="unlockAndRefresh()" title="Unlock & Force Live Refresh">🔄 Live</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
-    <div class="note" id="espnNote">Showing ONLY Live & Upcoming Matches</div>
+    <div class="note" id="espnNote">Syncing Live & Upcoming Matches...</div>
   </div>
 
   <div class="grp">
@@ -289,7 +289,7 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
   <div class="broadcast-box">
     <div class="top-red-line"></div>
     <div class="main-row">
-      <!-- Left Wing: Flag on left, Team Name + Big Score + Yellow Overs near center -->
+      <!-- Left Wing -->
       <div class="wing-l" id="wL">
         <div class="flag-ring">
           <div class="flag" id="batFlag"><img src="https://flagcdn.com/w160/in.png" alt="Flag"></div>
@@ -301,7 +301,7 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
         </div>
       </div>
 
-      <!-- Center Ball Event Display (WIDE / 0 / 4 / 6 / WICKET) -->
+      <!-- Center Ball Event Display -->
       <div class="center-box" onclick="togglePanel()" title="Tap to Open/Close Settings">
         <div class="dot-l" id="dotSync"></div>
         <div class="dot-r" id="dotAI"></div>
@@ -309,7 +309,7 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
         <div class="center-event c0" id="lastBall">0</div>
       </div>
 
-      <!-- Right Wing: Team Name + Big BOWL / Score near center, Flag on right -->
+      <!-- Right Wing -->
       <div class="wing-r" id="wR">
         <div class="team-info-r">
           <div class="t-name" id="bowlName">AUSTRALIA</div>
@@ -713,6 +713,7 @@ function buildDropdown(){
 function unlockAndRefresh(){
   isMasterDevice=true;
   st.manualLock=false;
+  st.id='auto-espn';
   fetchESPN(false);
 }
 
@@ -831,14 +832,37 @@ function toggleSubBanner(on){
   render();sync();
 }
 
-async function fetchJsonResilient(url){
-  let bust=`${url}${url.includes('?')?'&':'?'}_cb=${Date.now()}`;
-  let urls=[bust,`https://api.allorigins.win/raw?url=${encodeURIComponent(bust)}`,`https://corsproxy.io/?${encodeURIComponent(bust)}`];
-  for(let u of urls){
-    try{
-      let res=await fetch(u,{cache:'no-store'});
-      if(res.ok)return await res.json();
-    }catch(e){}
+// ============================================================
+// RESILIENT FETCH WITH TIMEOUT & MULTIPLE PROXIES (UPDATED)
+// ============================================================
+async function fetchWithTimeout(url, ms = 5000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+    clearTimeout(id);
+    if (res.ok) return await res.json();
+  } catch (e) {
+    clearTimeout(id);
+  }
+  return null;
+}
+
+async function fetchJsonResilient(url) {
+  let bust = `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
+  // 1. നേരിട്ട് ESPN വിളിച്ചു നോക്കുന്നു
+  let direct = await fetchWithTimeout(bust, 4500);
+  if (direct) return direct;
+
+  // 2. നേരിട്ട് ലഭിച്ചില്ലെങ്കിൽ പ്രോക്സികൾ ഉപയോഗിക്കുന്നു
+  let proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(bust)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bust)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(bust)}`
+  ];
+  for (let u of proxies) {
+    let data = await fetchWithTimeout(u, 5500);
+    if (data) return data;
   }
   return null;
 }
@@ -849,7 +873,10 @@ async function fetchESPN(isAuto=true){
   }
 
   const noteEl=document.getElementById('espnNote');
-  if(!isAuto)noteEl.textContent='Fetching Live & Upcoming Matches...';
+  if(!isAuto){
+    noteEl.style.color='#facc15';
+    noteEl.textContent='⏳ Fetching Live & Upcoming Matches from ESPN...';
+  }
 
   let eventsMap=new Map();
   let d=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard');
@@ -863,7 +890,11 @@ async function fetchESPN(isAuto=true){
   }
 
   let events=Array.from(eventsMap.values());
-  if(!events.length)return;
+  if(!events.length){
+    noteEl.style.color='#f87171';
+    noteEl.textContent='⚠️ ESPN സർവറിൽ നിന്ന് ഡാറ്റ ലഭിച്ചില്ല (ഇന്റർനെറ്റ് പരിശോധിക്കുക അല്ലെങ്കിൽ 🔄 Live അമർത്തുക)';
+    return;
+  }
 
   let list=[];
   events.forEach(ev=>{
@@ -978,6 +1009,7 @@ async function fetchESPN(isAuto=true){
   let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   let liveCount=list.filter(x=>x.isLive).length;
   let upCount=list.filter(x=>!x.isLive).length;
+  noteEl.style.color='#34d399';
   noteEl.textContent=`● ${liveCount} Live & ${upCount} Upcoming Matches Loaded (${now})`;
 }
 
@@ -1588,6 +1620,7 @@ async function connectYT(isSilent=false){
 
 buildDropdown();
 try{let s=JSON.parse(safeGet('ck_st_v34',''));if(s)st={...st,...s};}catch(e){}
+st.manualLock = false; // പേജ് റീലോഡ് ചെയ്യുമ്പോൾ ലോക്ക് ഒഴിവാക്കി ലൈവ് ഡാറ്റ എടുക്കാൻ
 
 const initKey=qp.get('key')||safeGet('yt_api_key_v34','');
 const initVid=qp.get('vid')||safeGet('yt_video_id_v34','');
