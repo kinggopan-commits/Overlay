@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Pro Broadcast v35</title>
+<title>Live Cricket Broadcast Overlay - Pro Broadcast v36</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -833,9 +833,9 @@ function toggleSubBanner(on){
 }
 
 // ============================================================
-// RESILIENT FETCH WITH TIMEOUT & MULTIPLE PROXIES (UPDATED)
+// RESILIENT FETCH WITH ALLORIGINS GET WRAPPER & PROXIES (v36)
 // ============================================================
-async function fetchWithTimeout(url, ms = 5000) {
+async function fetchWithTimeout(url, ms = 5500) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
   try {
@@ -850,21 +850,28 @@ async function fetchWithTimeout(url, ms = 5000) {
 
 async function fetchJsonResilient(url) {
   let bust = `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
-  // 1. നേരിട്ട് ESPN വിളിച്ചു നോക്കുന്നു
-  let direct = await fetchWithTimeout(bust, 4500);
-  if (direct) return direct;
 
-  // 2. നേരിട്ട് ലഭിച്ചില്ലെങ്കിൽ പ്രോക്സികൾ ഉപയോഗിക്കുന്നു
+  // 1. AllOrigins GET Wrapper (CORS ബ്ലോക്ക് ഒഴിവാക്കാൻ ഏറ്റവും അനുയോജ്യം)
+  try {
+    let aoRes = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(bust)}`, 6500);
+    if (aoRes && aoRes.contents) {
+      return JSON.parse(aoRes.contents);
+    }
+  } catch (e) {}
+
+  // 2. ThingProxy / Corsproxy / CodeTabs ബാക്കപ്പ്
   let proxies = [
+    `https://thingproxy.freeboard.io/fetch/${bust}`,
     `https://corsproxy.io/?${encodeURIComponent(bust)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bust)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(bust)}`
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bust)}`
   ];
   for (let u of proxies) {
     let data = await fetchWithTimeout(u, 5500);
     if (data) return data;
   }
-  return null;
+
+  // 3. നേരിട്ടുള്ള ശ്രമം
+  return await fetchWithTimeout(bust, 4500);
 }
 
 async function fetchESPN(isAuto=true){
@@ -1620,7 +1627,7 @@ async function connectYT(isSilent=false){
 
 buildDropdown();
 try{let s=JSON.parse(safeGet('ck_st_v34',''));if(s)st={...st,...s};}catch(e){}
-st.manualLock = false; // പേജ് റീലോഡ് ചെയ്യുമ്പോൾ ലോക്ക് ഒഴിവാക്കി ലൈവ് ഡാറ്റ എടുക്കാൻ
+st.manualLock = false;
 
 const initKey=qp.get('key')||safeGet('yt_api_key_v34','');
 const initVid=qp.get('vid')||safeGet('yt_video_id_v34','');
