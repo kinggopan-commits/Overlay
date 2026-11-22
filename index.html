@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Live Cricket Broadcast Overlay - Pro Broadcast v36</title>
+<title>Live Cricket Broadcast Overlay - Pro Broadcast v37</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none}
@@ -39,8 +39,7 @@ body.ctrl-open{overflow-y:auto;padding-bottom:185px}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* Team Name, Big Score & Yellow Overs */
-.team-info-l{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:0;padding:0 6px}
-.team-info-r{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:0;padding:0 6px}
+.team-info-l,.team-info-r{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:0;padding:0 6px}
 
 .t-name{color:#ffffff;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;text-shadow:1px 2px 4px rgba(0,0,0,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.05}
 .big-score{color:#ffffff;font-size:40px;font-weight:900;line-height:0.95;text-shadow:2px 3px 6px rgba(0,0,0,.9);white-space:nowrap;letter-spacing:-0.5px;margin:2px 0}
@@ -137,7 +136,7 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
 
 <div class="panel" id="panel">
   <div class="p-head">
-    <h3>🎛️ Live Controller</h3>
+    <h3>🎛️ Live Controller (v37 Fixed)</h3>
     <span class="badge" id="syncBadge">Connecting...</span>
     <button class="btn btn-r" style="padding:6px 12px;font-size:12px" onclick="hidePanel()">✖ Hide</button>
   </div>
@@ -172,10 +171,10 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
   </div>
 
   <div class="grp">
-    <label>1. Live & Upcoming Matches ONLY (All World + Domestic Teams)</label>
+    <label>1. Live & Upcoming Matches (Auto-Refresh Every 8 Sec)</label>
     <div class="row">
       <select id="matchSel"></select>
-      <button class="btn btn-a" onclick="unlockAndRefresh()" title="Unlock & Force Live Refresh">🔄 Live</button>
+      <button class="btn btn-a" onclick="unlockAndRefresh()" title="Unlock & Force Live Refresh">🔄 Refresh</button>
       <button class="btn btn-d" onclick="swapTeams()" title="Swap Batting & Bowling Sides">⇄ Swap</button>
     </div>
     <div class="note" id="espnNote">Syncing Live & Upcoming Matches...</div>
@@ -184,9 +183,9 @@ input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
   <div class="grp">
     <label>2. Custom Team Names & Wing Colors</label>
     <div class="row">
-      <input type="text" id="custBat" placeholder="e.g. INDIA A / KERALA / CSK" oninput="liveTypeTeams()">
+      <input type="text" id="custBat" placeholder="e.g. INDIA / KERALA / CSK" oninput="liveTypeTeams()">
       <input type="color" id="col1" value="#b91c1c" onchange="liveTypeTeams()">
-      <input type="text" id="custBowl" placeholder="e.g. NEPAL / MUMBAI / MI" oninput="liveTypeTeams()">
+      <input type="text" id="custBowl" placeholder="e.g. AUSTRALIA / MUMBAI / MI" oninput="liveTypeTeams()">
       <input type="color" id="col2" value="#991b1b" onchange="liveTypeTeams()">
     </div>
   </div>
@@ -410,23 +409,7 @@ const COUNTRY_ISO={
   'JAPAN':'jp','JPN':'jp',
   'CHINA':'cn','CHN':'cn',
   'BHUTAN':'bt','BHU':'bt',
-  'MALDIVES':'mv','MDV':'mv',
-  'DENMARK':'dk','DEN':'dk',
-  'SPAIN':'es','ESP':'es',
-  'PORTUGAL':'pt','POR':'pt',
-  'FRANCE':'fr','FRA':'fr',
-  'AUSTRIA':'at','AUT':'at',
-  'BELGIUM':'be','BEL':'be',
-  'NORWAY':'no','NOR':'no',
-  'SWEDEN':'se','SWE':'se',
-  'FINLAND':'fi','FIN':'fi',
-  'ARGENTINA':'ar','ARG':'ar',
-  'BRAZIL':'br','BRA':'br',
-  'CHILE':'cl','CHI':'cl',
-  'MEXICO':'mx','MEX':'mx',
-  'VANUATU':'vu','VAN':'vu',
-  'FIJI':'fj','FIJ':'fj',
-  'SAMOA':'ws','SAM':'ws'
+  'MALDIVES':'mv','MDV':'mv'
 };
 
 const DOMESTIC_BADGES={
@@ -447,13 +430,6 @@ const DOMESTIC_BADGES={
   'PUNJAB':{code:'PUN',bg:'#dc2626',fg:'#fff'},'BARODA':{code:'BRD',bg:'#2563eb',fg:'#fff'},
   'HARYANA':{code:'HAR',bg:'#047857',fg:'#fff'},'GUJARAT':{code:'GUJ',bg:'#0284c7',fg:'#fff'},
   'MAHARASHTRA':{code:'MAH',bg:'#d97706',fg:'#fff'},'HYDERABAD':{code:'HYD',bg:'#ea580c',fg:'#fff'},
-  'ANDHRA':{code:'AND',bg:'#1d4ed8',fg:'#fff'},'MADHYA PRADESH':{code:'MP',bg:'#0f766e',fg:'#fff'},
-  'RAJASTHAN':{code:'RAJ',bg:'#be185d',fg:'#fff'},'UTTAR PRADESH':{code:'UP',bg:'#2563eb',fg:'#fff'},
-  'JHARKHAND':{code:'JHA',bg:'#15803d',fg:'#fff'},'ODISHA':{code:'ODI',bg:'#b91c1c',fg:'#fff'},
-  'ASSAM':{code:'ASM',bg:'#991b1b',fg:'#fff'},'RAILWAYS':{code:'RLY',bg:'#1e3a8a',fg:'#fff'},
-  'SERVICES':{code:'SER',bg:'#374151',fg:'#fff'},'CHANDIGARH':{code:'CHD',bg:'#0284c7',fg:'#fff'},
-  'GOA':{code:'GOA',bg:'#0d9488',fg:'#fff'},'HIMACHAL PRADESH':{code:'HP',bg:'#16a34a',fg:'#fff'},
-  'JAMMU & KASHMIR':{code:'JK',bg:'#1d4ed8',fg:'#fff'},'TRIPURA':{code:'TRI',bg:'#b45309',fg:'#fff'},
   'SYDNEY SIXERS':{code:'SIX',bg:'#ec4899',fg:'#fff'},'SYDNEY THUNDER':{code:'THU',bg:'#65a30d',fg:'#fff'},
   'MELBOURNE STARS':{code:'STA',bg:'#16a34a',fg:'#fff'},'MELBOURNE RENEGADES':{code:'REN',bg:'#dc2626',fg:'#fff'},
   'PERTH SCORCHERS':{code:'SCO',bg:'#ea580c',fg:'#fff'},'BRISBANE HEAT':{code:'HEA',bg:'#0284c7',fg:'#fff'},
@@ -474,23 +450,8 @@ const BUILTIN_TEAMS=[
   {id:'ind-ban',lbl:'🌍 INDIA vs BANGLADESH [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'BANGLADESH',fC:'bd',c2:'#991b1b',oppSc:'',t:'INDIA vs BANGLADESH - LIVE'},
   {id:'ind-afg',lbl:'🌍 INDIA vs AFGHANISTAN [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AFGHANISTAN',fC:'af',c2:'#991b1b',oppSc:'',t:'INDIA vs AFGHANISTAN - LIVE'},
   {id:'ind-wi',lbl:'🌍 INDIA vs WEST INDIES [INTERNATIONAL]',bN:'INDIA',bC:'in',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'WEST INDIES',fC:'bb',c2:'#991b1b',oppSc:'',t:'INDIA vs WEST INDIES - LIVE'},
-  {id:'aus-eng',lbl:'🌍 AUSTRALIA vs ENGLAND [ASHES / ODI / T20]',bN:'AUSTRALIA',bC:'au',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'ENGLAND',fC:'gb-eng',c2:'#991b1b',oppSc:'',t:'AUSTRALIA vs ENGLAND - LIVE'},
-  {id:'pak-sa',lbl:'🌍 PAKISTAN vs SOUTH AFRICA [INTERNATIONAL]',bN:'PAKISTAN',bC:'pk',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SOUTH AFRICA',fC:'za',c2:'#991b1b',oppSc:'',t:'PAKISTAN vs SOUTH AFRICA - LIVE'},
-  {id:'nz-sl',lbl:'🌍 NEW ZEALAND vs SRI LANKA [INTERNATIONAL]',bN:'NEW ZEALAND',bC:'nz',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SRI LANKA',fC:'lk',c2:'#991b1b',oppSc:'',t:'NEW ZEALAND vs SRI LANKA - LIVE'},
-  {id:'ban-afg',lbl:'🌍 BANGLADESH vs AFGHANISTAN [INTERNATIONAL]',bN:'BANGLADESH',bC:'bd',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'AFGHANISTAN',fC:'af',c2:'#991b1b',oppSc:'',t:'BANGLADESH vs AFGHANISTAN - LIVE'},
-  {id:'ire-sco',lbl:'🌍 IRELAND vs SCOTLAND [ASSOCIATE / EUROPE]',bN:'IRELAND',bC:'ie',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'SCOTLAND',fC:'gb-sct',c2:'#991b1b',oppSc:'',t:'IRELAND vs SCOTLAND - LIVE'},
-  {id:'ned-zim',lbl:'🌍 NETHERLANDS vs ZIMBABWE [INTERNATIONAL]',bN:'NETHERLANDS',bC:'nl',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'ZIMBABWE',fC:'zw',c2:'#991b1b',oppSc:'',t:'NETHERLANDS vs ZIMBABWE - LIVE'},
-  {id:'nep-uae',lbl:'🌍 NEPAL vs UAE [ASIA / ASSOCIATE]',bN:'NEPAL',bC:'np',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'UAE',fC:'ae',c2:'#991b1b',oppSc:'',t:'NEPAL vs UAE - LIVE'},
-  {id:'usa-can',lbl:'🌍 USA vs CANADA [AMERICAS]',bN:'USA',bC:'us',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'CANADA',fC:'ca',c2:'#991b1b',oppSc:'',t:'USA vs CANADA - LIVE'},
-  {id:'nam-oma',lbl:'🌍 NAMIBIA vs OMAN [INTERNATIONAL]',bN:'NAMIBIA',bC:'na',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'OMAN',fC:'om',c2:'#991b1b',oppSc:'',t:'NAMIBIA vs OMAN - LIVE'},
-  {id:'dom-ker-mum',lbl:'🏆 KERALA vs MUMBAI [INDIAN DOMESTIC / RANJI]',bN:'KERALA',bC:'KER',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'MUMBAI',fC:'MUM',c2:'#991b1b',oppSc:'',t:'KERALA vs MUMBAI - LIVE'},
-  {id:'dom-kar-tn',lbl:'🏆 KARNATAKA vs TAMIL NADU [INDIAN DOMESTIC]',bN:'KARNATAKA',bC:'KAR',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'TAMIL NADU',fC:'TN',c2:'#991b1b',oppSc:'',t:'KARNATAKA vs TAMIL NADU - LIVE'},
-  {id:'dom-del-ben',lbl:'🏆 DELHI vs BENGAL [INDIAN DOMESTIC]',bN:'DELHI',bC:'DEL',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'BENGAL',fC:'BEN',c2:'#991b1b',oppSc:'',t:'DELHI vs BENGAL - LIVE'},
   {id:'ipl-csk-mi',lbl:'🏏 CHENNAI (CSK) vs MUMBAI (MI) [IPL]',bN:'CHENNAI',bC:'CSK',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'MUMBAI',fC:'MI',c2:'#991b1b',oppSc:'',t:'CSK vs MI - LIVE'},
-  {id:'ipl-rcb-kkr',lbl:'🏏 BENGALURU (RCB) vs KOLKATA (KKR) [IPL]',bN:'BENGALURU',bC:'RCB',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KOLKATA',fC:'KKR',c2:'#991b1b',oppSc:'',t:'RCB vs KKR - LIVE'},
-  {id:'ipl-srh-rr',lbl:'🏏 HYDERABAD (SRH) vs RAJASTHAN (RR) [IPL]',bN:'HYDERABAD',bC:'SRH',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'RAJASTHAN',fC:'RR',c2:'#991b1b',oppSc:'',t:'SRH vs RR - LIVE'},
-  {id:'bbl-six-sta',lbl:'🏏 SYDNEY SIXERS vs MELBOURNE STARS [BBL]',bN:'SYDNEY SIXERS',bC:'SIX',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'MELBOURNE STARS',fC:'STA',c2:'#991b1b',oppSc:'',t:'BBL LIVE MATCH'},
-  {id:'psl-lq-kk',lbl:'🏏 LAHORE QALANDARS vs KARACHI KINGS [PSL]',bN:'LAHORE QALANDARS',bC:'LQ',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KARACHI KINGS',fC:'KK',c2:'#991b1b',oppSc:'',t:'PSL LIVE MATCH'}
+  {id:'ipl-rcb-kkr',lbl:'🏏 BENGALURU (RCB) vs KOLKATA (KKR) [IPL]',bN:'BENGALURU',bC:'RCB',c1:'#b91c1c',r:0,w:0,b:0,totOv:20,lb:'0',fN:'KOLKATA',fC:'KKR',c2:'#991b1b',oppSc:'',t:'RCB vs KKR - LIVE'}
 ];
 
 let allTeams=[...BUILTIN_TEAMS];
@@ -511,21 +472,21 @@ let st={
 };
 let hist=[];
 const SENDER_ID='snd_'+Math.random().toString(36).slice(2,9);
-const TOPIC='cricket/live/kinggopan_v34_broadcast';
+// Unique Room ID so old/other broadcasts never overwrite your score!
+const ROOM_ID=qp.get('room')||'kinggopan_v37_live';
+const TOPIC='cricket/live/'+ROOM_ID;
 let client=null;
 let panelOpen=isControlMode;
-let isMasterDevice=isControlMode;
-let lastRemoteSyncTime=0;
 let lastStateHash='';
 
 // ============================================================
-// LIGHTWEIGHT BACKGROUND MUSIC PLAYER
+// BACKGROUND MUSIC PLAYER
 // ============================================================
 const bgMusic=document.getElementById('bgMusicPlayer');
-let savedVolPercent=parseInt(safeGet('bg_music_vol_v34','40'))||40;
-let savedLoopState=safeGet('bg_music_loop_v34','true')!=='false';
-let savedMusicUrl=safeGet('bg_music_url_v34','');
-let savedAutoPlay=safeGet('bg_music_autoplay_v34','false')==='true';
+let savedVolPercent=parseInt(safeGet('bg_music_vol_v37','40'))||40;
+let savedLoopState=safeGet('bg_music_loop_v37','true')!=='false';
+let savedMusicUrl=safeGet('bg_music_url_v37','');
+let savedAutoPlay=safeGet('bg_music_autoplay_v37','false')==='true';
 let targetMusicVol=savedVolPercent/100;
 let isMusicPlaying=false;
 let currentBlobUrl=null;
@@ -546,21 +507,16 @@ if(savedMusicUrl){
   document.getElementById('musicStatusTag').style.color='#38bdf8';
 }
 
-function saveMusicUrl(){
-  const u=document.getElementById('musicUrlInp').value.trim();
-  safeSet('bg_music_url_v34',u);
-}
-
+function saveMusicUrl(){safeSet('bg_music_url_v37',document.getElementById('musicUrlInp').value.trim());}
 function loadMusicFromUrl(){
   const u=document.getElementById('musicUrlInp').value.trim();
   if(!u){alert('ദയവായി ഒരു Direct MP3 Link പേസ്റ്റ് ചെയ്യുക.');return;}
-  safeSet('bg_music_url_v34',u);
+  safeSet('bg_music_url_v37',u);
   if(currentBlobUrl){try{URL.revokeObjectURL(currentBlobUrl);}catch(e){} currentBlobUrl=null;}
   bgMusic.src=u;
   document.getElementById('musicTrackName').textContent='🎵 URL: '+u;
   playBgMusic(false);
 }
-
 function loadMusicFile(e){
   try{
     const file=e.target.files[0];
@@ -572,92 +528,48 @@ function loadMusicFile(e){
     playBgMusic(false);
   }catch(err){}
 }
-
 function clearSavedMusic(){
   stopBgMusic();
   bgMusic.removeAttribute('src');
   if(currentBlobUrl){try{URL.revokeObjectURL(currentBlobUrl);}catch(e){} currentBlobUrl=null;}
-  safeDel('bg_music_url_v34');
-  safeDel('bg_music_autoplay_v34');
-  savedAutoPlay=false;
-  document.getElementById('musicUrlInp').value='';
-  document.getElementById('bgMusicInput').value='';
+  safeDel('bg_music_url_v37');safeDel('bg_music_autoplay_v37');savedAutoPlay=false;
+  document.getElementById('musicUrlInp').value='';document.getElementById('bgMusicInput').value='';
   document.getElementById('musicTrackName').textContent='No track selected';
 }
-
 function playBgMusic(isAuto=false){
-  if(!bgMusic.src){
-    if(!isAuto)alert('ആദ്യം ഒരു MP3 ഫയലോ ലിങ്കോ തിരഞ്ഞെടുക്കുക.');
-    return;
-  }
+  if(!bgMusic.src){if(!isAuto)alert('ആദ്യം ഒരു MP3 ഫയലോ ലിങ്കോ തിരഞ്ഞെടുക്കുക.');return;}
   bgMusic.volume=speaking?Math.min(0.10,targetMusicVol*0.25):targetMusicVol;
   bgMusic.play().then(()=>{
-    isMusicPlaying=true;
-    savedAutoPlay=true;
-    safeSet('bg_music_autoplay_v34','true');
-    document.getElementById('btnMusicPlay').textContent='⏸ Pause';
-    document.getElementById('btnMusicPlay').className='btn btn-a';
-    const stTag=document.getElementById('musicStatusTag');
-    stTag.textContent='● Playing';
-    stTag.style.color='#34d399';
+    isMusicPlaying=true;savedAutoPlay=true;safeSet('bg_music_autoplay_v37','true');
+    document.getElementById('btnMusicPlay').textContent='⏸ Pause';document.getElementById('btnMusicPlay').className='btn btn-a';
+    const stTag=document.getElementById('musicStatusTag');stTag.textContent='● Playing';stTag.style.color='#34d399';
   }).catch(()=>{
-    const stTag=document.getElementById('musicStatusTag');
-    stTag.textContent='Tap Play';
-    stTag.style.color='#facc15';
+    const stTag=document.getElementById('musicStatusTag');stTag.textContent='Tap Play';stTag.style.color='#facc15';
   });
 }
-
 function pauseBgMusic(){
-  bgMusic.pause();
-  isMusicPlaying=false;
-  savedAutoPlay=false;
-  safeSet('bg_music_autoplay_v34','false');
-  document.getElementById('btnMusicPlay').textContent='▶ Play';
-  document.getElementById('btnMusicPlay').className='btn btn-g';
-  const stTag=document.getElementById('musicStatusTag');
-  stTag.textContent='Paused';
-  stTag.style.color='#facc15';
+  bgMusic.pause();isMusicPlaying=false;savedAutoPlay=false;safeSet('bg_music_autoplay_v37','false');
+  document.getElementById('btnMusicPlay').textContent='▶ Play';document.getElementById('btnMusicPlay').className='btn btn-g';
+  const stTag=document.getElementById('musicStatusTag');stTag.textContent='Paused';stTag.style.color='#facc15';
 }
-
-function toggleBgMusic(){
-  if(isMusicPlaying)pauseBgMusic();
-  else playBgMusic(false);
-}
-
+function toggleBgMusic(){if(isMusicPlaying)pauseBgMusic();else playBgMusic(false);}
 function stopBgMusic(){
-  bgMusic.pause();
-  try{bgMusic.currentTime=0;}catch(e){}
-  isMusicPlaying=false;
-  savedAutoPlay=false;
-  safeSet('bg_music_autoplay_v34','false');
-  document.getElementById('btnMusicPlay').textContent='▶ Play';
-  document.getElementById('btnMusicPlay').className='btn btn-g';
-  const stTag=document.getElementById('musicStatusTag');
-  stTag.textContent='Stopped';
-  stTag.style.color='#94a3b8';
+  bgMusic.pause();try{bgMusic.currentTime=0;}catch(e){}
+  isMusicPlaying=false;savedAutoPlay=false;safeSet('bg_music_autoplay_v37','false');
+  document.getElementById('btnMusicPlay').textContent='▶ Play';document.getElementById('btnMusicPlay').className='btn btn-g';
+  const stTag=document.getElementById('musicStatusTag');stTag.textContent='Stopped';stTag.style.color='#94a3b8';
 }
-
 function toggleMusicLoop(){
-  bgMusic.loop=!bgMusic.loop;
-  safeSet('bg_music_loop_v34',String(bgMusic.loop));
+  bgMusic.loop=!bgMusic.loop;safeSet('bg_music_loop_v37',String(bgMusic.loop));
   const btn=document.getElementById('btnMusicLoop');
-  btn.textContent=bgMusic.loop?'🔁 Loop: ON':'🔁 Loop: OFF';
-  btn.className=bgMusic.loop?'btn btn-active':'btn btn-d';
+  btn.textContent=bgMusic.loop?'🔁 Loop: ON':'🔁 Loop: OFF';btn.className=bgMusic.loop?'btn btn-active':'btn btn-d';
 }
-
 function changeMusicVol(val){
-  safeSet('bg_music_vol_v34',String(val));
-  targetMusicVol=Math.max(0,Math.min(1,parseInt(val)/100));
-  document.getElementById('volLabel').textContent=val+'%';
-  if(!speaking)bgMusic.volume=targetMusicVol;
+  safeSet('bg_music_vol_v37',String(val));targetMusicVol=Math.max(0,Math.min(1,parseInt(val)/100));
+  document.getElementById('volLabel').textContent=val+'%';if(!speaking)bgMusic.volume=targetMusicVol;
 }
-
 bgMusic.onended=()=>{if(!bgMusic.loop)stopBgMusic();};
-
-function duckMusic(active){
-  if(!isMusicPlaying)return;
-  bgMusic.volume=active?Math.min(0.08,targetMusicVol*0.2):targetMusicVol;
-}
+function duckMusic(active){if(!isMusicPlaying)return;bgMusic.volume=active?Math.min(0.08,targetMusicVol*0.2):targetMusicVol;}
 
 // ============================================================
 // TEAM FLAGS & OVERLAY LOGIC
@@ -711,14 +623,12 @@ function buildDropdown(){
 }
 
 function unlockAndRefresh(){
-  isMasterDevice=true;
   st.manualLock=false;
   st.id='auto-espn';
   fetchESPN(false);
 }
 
 document.getElementById('matchSel').onchange=e=>{
-  isMasterDevice=true;
   let val=e.target.value;
   if(val==='auto-espn'){
     st.id='auto-espn';
@@ -740,7 +650,6 @@ document.getElementById('matchSel').onchange=e=>{
 };
 
 function liveTypeTeams(){
-  isMasterDevice=true;
   let b=document.getElementById('custBat').value.trim().toUpperCase();
   let f=document.getElementById('custBowl').value.trim().toUpperCase();
   let c1=document.getElementById('col1').value;
@@ -762,7 +671,6 @@ function liveTypeTeams(){
 }
 
 function liveTypeBrand(){
-  isMasterDevice=true;
   let v=document.getElementById('brandInp').value.trim().toUpperCase();
   st.brand=v||'KINGGOPAN';
   render();sync();
@@ -779,23 +687,16 @@ function recordBallToOverStrip(ballLabel, isLegal){
 }
 
 function manualBatEdit(){
-  isMasterDevice=true;
   let r=parseInt(document.getElementById('inpRuns').value);
   let w=parseInt(document.getElementById('inpWkts').value);
   let ov=document.getElementById('inpOvers').value.trim();
   if(!isNaN(r)){
     let diff=r-st.r;
-    if(diff>0&&diff<=6){
-      st.lb=String(diff);
-      recordBallToOverStrip(String(diff),true);
-    }
+    if(diff>0&&diff<=6){st.lb=String(diff);recordBallToOverStrip(String(diff),true);}
     st.r=Math.max(0,r);
   }
   if(!isNaN(w)){
-    if(w>st.w){
-      st.lb='W';
-      recordBallToOverStrip('W',true);
-    }
+    if(w>st.w){st.lb='W';recordBallToOverStrip('W',true);}
     st.w=Math.min(10,Math.max(0,w));
   }
   if(ov!==''){
@@ -807,35 +708,28 @@ function manualBatEdit(){
 }
 
 function manualOppEdit(){
-  isMasterDevice=true;
   st.oppSc=document.getElementById('inpOppScore').value.trim().toUpperCase();
   st.manualLock=true;st.ts=Date.now();
   render();sync();
 }
 
 function resetScoreZero(){
-  isMasterDevice=true;
   hist.push(JSON.parse(JSON.stringify(st)));
   st.r=0;st.w=0;st.b=0;st.lb='0';st.prevBalls=[];st.currBalls=[];st.manualLock=true;st.ts=Date.now();
   render();sync();
 }
 
 function liveTypeTicker(){
-  isMasterDevice=true;
   let v=document.getElementById('tickerInp').value.trim();
   if(v){st.t=v.toUpperCase();st.ts=Date.now();render();sync();}
 }
 
-function toggleSubBanner(on){
-  isMasterDevice=true;
-  st.showSub=on;
-  render();sync();
-}
+function toggleSubBanner(on){st.showSub=on;render();sync();}
 
 // ============================================================
-// RESILIENT FETCH WITH ALLORIGINS GET WRAPPER & PROXIES (v36)
+// FAST & DIRECT ESPN LIVE SCORE ENGINE (FIXED v37)
 // ============================================================
-async function fetchWithTimeout(url, ms = 5500) {
+async function fetchWithTimeout(url, ms = 5000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
   try {
@@ -848,176 +742,191 @@ async function fetchWithTimeout(url, ms = 5500) {
   return null;
 }
 
-async function fetchJsonResilient(url) {
-  let bust = `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
+async function fetchJsonDirectFirst(url) {
+  let bust = `${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`;
 
-  // 1. AllOrigins GET Wrapper (CORS ബ്ലോക്ക് ഒഴിവാക്കാൻ ഏറ്റവും അനുയോജ്യം)
+  // 1. DIRECT FETCH FIRST (ESPN supports CORS directly & responds in <300ms!)
+  let direct = await fetchWithTimeout(bust, 4500);
+  if (direct) return direct;
+
+  // 2. FALLBACK PROXIES ONLY IF DIRECT FAILS
   try {
-    let aoRes = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(bust)}`, 6500);
-    if (aoRes && aoRes.contents) {
-      return JSON.parse(aoRes.contents);
-    }
+    let aoRes = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(bust)}`, 5500);
+    if (aoRes && aoRes.contents) return JSON.parse(aoRes.contents);
   } catch (e) {}
 
-  // 2. ThingProxy / Corsproxy / CodeTabs ബാക്കപ്പ്
-  let proxies = [
-    `https://thingproxy.freeboard.io/fetch/${bust}`,
-    `https://corsproxy.io/?${encodeURIComponent(bust)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bust)}`
-  ];
-  for (let u of proxies) {
-    let data = await fetchWithTimeout(u, 5500);
-    if (data) return data;
-  }
+  let codetabs = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bust)}`, 5000);
+  if (codetabs) return codetabs;
 
-  // 3. നേരിട്ടുള്ള ശ്രമം
-  return await fetchWithTimeout(bust, 4500);
+  return null;
 }
 
-async function fetchESPN(isAuto=true){
-  if(isAuto&&!isMasterDevice&&(Date.now()-lastRemoteSyncTime<25000)){
-    return;
+function parseTeamData(c) {
+  let name = (c.team?.shortDisplayName || c.team?.displayName || c.team?.name || 'TEAM').toUpperCase();
+  let abbr = (c.team?.abbreviation || name.slice(0, 3)).toUpperCase();
+  let dom = resolveDomesticBadge(name, abbr);
+  let iso = resolveCountryFlag(name, abbr) || (dom ? dom.code : abbr);
+
+  let runs = 0, wkts = 0, ovStr = '', hasBatted = false, isBattingNow = false;
+
+  // Parse linescores (most accurate for ESPN Cricket)
+  if (Array.isArray(c.linescores) && c.linescores.length > 0) {
+    let lastInn = c.linescores[c.linescores.length - 1];
+    if (lastInn.runs !== undefined) { runs = parseInt(lastInn.runs) || 0; hasBatted = true; }
+    if (lastInn.wickets !== undefined) wkts = parseInt(lastInn.wickets) || 0;
+    if (lastInn.overs !== undefined) ovStr = String(lastInn.overs);
+    if (lastInn.isBatting === true) isBattingNow = true;
   }
 
-  const noteEl=document.getElementById('espnNote');
-  if(!isAuto){
-    noteEl.style.color='#facc15';
-    noteEl.textContent='⏳ Fetching Live & Upcoming Matches from ESPN...';
+  // Fallback / override from c.score string (e.g., "185/4 (18.2 ov)" or "240/8")
+  let raw = String(c.score || '').trim();
+  if (raw && raw !== '0' && raw !== '0/0') {
+    hasBatted = true;
+    // Handle multi-innings like "250 & 120/3" -> take latest
+    let parts = raw.split('&');
+    let latestScore = parts[parts.length - 1].trim();
+    let mSc = latestScore.match(/(\d+)[\/\-](\d+)/);
+    if (mSc) {
+      runs = parseInt(mSc[1]);
+      wkts = parseInt(mSc[2]);
+    } else {
+      let mOnlyRuns = latestScore.match(/^(\d+)/);
+      if (mOnlyRuns && !runs) {
+        runs = parseInt(mOnlyRuns[1]) || 0;
+        wkts = 10;
+      }
+    }
+    let mOv = latestScore.match(/\(([\d\.]+)\s*ov/i);
+    if (mOv) ovStr = mOv[1];
   }
 
-  let eventsMap=new Map();
-  let d=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard');
-  if(d&&d.events)d.events.forEach(ev=>eventsMap.set(ev.id,ev));
+  let balls = ovStr ? oversToBalls(ovStr) : 0;
+  return { name, abbr, iso, dom, runs, wkts, ovStr, balls, hasBatted, isBattingNow };
+}
 
-  let sp=await fetchJsonResilient('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel');
-  if(sp&&sp.scores){
-    sp.scores.forEach(lg=>(lg.events||[]).forEach(ev=>{
-      if(!eventsMap.has(ev.id))eventsMap.set(ev.id,ev);
+async function fetchESPN(isAuto = true) {
+  const noteEl = document.getElementById('espnNote');
+  if (!isAuto) {
+    noteEl.style.color = '#facc15';
+    noteEl.textContent = '⏳ Fetching Live Scores directly from ESPN...';
+  }
+
+  let eventsMap = new Map();
+  const [d, sp] = await Promise.all([
+    fetchJsonDirectFirst('https://site.api.espn.com/apis/site/v2/sports/cricket/scoreboard'),
+    fetchJsonDirectFirst('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel')
+  ]);
+
+  if (d && Array.isArray(d.events)) {
+    d.events.forEach(ev => eventsMap.set(ev.id, ev));
+  }
+  if (sp && Array.isArray(sp.scores)) {
+    sp.scores.forEach(lg => (lg.events || []).forEach(ev => {
+      if (!eventsMap.has(ev.id)) eventsMap.set(ev.id, ev);
     }));
   }
 
-  let events=Array.from(eventsMap.values());
-  if(!events.length){
-    noteEl.style.color='#f87171';
-    noteEl.textContent='⚠️ ESPN സർവറിൽ നിന്ന് ഡാറ്റ ലഭിച്ചില്ല (ഇന്റർനെറ്റ് പരിശോധിക്കുക അല്ലെങ്കിൽ 🔄 Live അമർത്തുക)';
+  let events = Array.from(eventsMap.values());
+  if (!events.length) {
+    noteEl.style.color = '#f87171';
+    noteEl.textContent = '⚠️ ESPN ഡാറ്റ ലഭിച്ചില്ല. ഇന്റർനെറ്റ് പരിശോധിക്കുക അല്ലെങ്കിൽ 🔄 Refresh അമർത്തുക.';
     return;
   }
 
-  let list=[];
-  events.forEach(ev=>{
-    let state=(ev.status?.type?.state||'').toLowerCase();
-    if(state==='post'||ev.status?.type?.completed===true)return;
+  let list = [];
+  events.forEach(ev => {
+    let state = (ev.status?.type?.state || '').toLowerCase();
+    // Skip completed matches unless no live/upcoming matches exist
+    if (state === 'post' || ev.status?.type?.completed === true) return;
 
-    let isLive=(state==='in');
-    let tag=isLive?'LIVE':'UPCOMING';
-    let comp=ev.competitions?.[0];
-    let cs=comp?.competitors||[];
-    if(cs.length>=2){
-      const parseComp=(c)=>{
-        let name=(c.team?.shortDisplayName||c.team?.name||'TEAM').toUpperCase();
-        let abbr=(c.team?.abbreviation||name.slice(0,3)).toUpperCase();
-        let dom=resolveDomesticBadge(name,abbr);
-        let iso=resolveCountryFlag(name,abbr)||(dom?dom.code:abbr);
-        let raw=String(c.score||'').trim();
-        let runs=0,wkts=0,ovStr='',hasBatted=false,isBattingNow=false;
+    let isLive = (state === 'in');
+    let tag = isLive ? 'LIVE' : 'UPCOMING';
+    let comp = ev.competitions?.[0];
+    let cs = comp?.competitors || [];
+    if (cs.length >= 2) {
+      let t0 = parseTeamData(cs[0]);
+      let t1 = parseTeamData(cs[1]);
+      let bat = t0, bowl = t1;
 
-        if(c.linescores&&c.linescores.length>0){
-          let lastInn=c.linescores[c.linescores.length-1];
-          if(lastInn.runs!==undefined)runs=parseInt(lastInn.runs)||0;
-          if(lastInn.wickets!==undefined)wkts=parseInt(lastInn.wickets)||0;
-          if(lastInn.overs!==undefined)ovStr=String(lastInn.overs);
-          if(lastInn.isBatting)isBattingNow=true;
-          hasBatted=true;
-        }
-        if(raw&&raw!=='0'&&raw!=='0/0'){
-          hasBatted=true;
-          let mSc=raw.match(/(\d+)[\/\-](\d+)/);
-          if(mSc){runs=parseInt(mSc[1]);wkts=parseInt(mSc[2]);}
-          else if(!runs){runs=parseInt(raw)||0;}
-          let mOv=raw.match(/\(([\d\.]+)\s*ov/i);
-          if(mOv)ovStr=mOv[1];
-        }
-        let balls=ovStr?oversToBalls(ovStr):0;
-        return {name,abbr,iso,dom,runs,wkts,ovStr,balls,hasBatted,isBattingNow};
-      };
-
-      let t0=parseComp(cs[0]),t1=parseComp(cs[1]);
-      let bat=t0,bowl=t1;
-
-      if(t1.isBattingNow&&!t0.isBattingNow){bat=t1;bowl=t0;}
-      else if(t0.isBattingNow&&!t1.isBattingNow){bat=t0;bowl=t1;}
-      else if(t1.hasBatted&&!t0.hasBatted){bat=t1;bowl=t0;}
-      else if(t0.hasBatted&&t1.hasBatted){
-        if(t1.balls>0&&(t0.balls===0||t1.balls<t0.balls)){bat=t1;bowl=t0;}
-        else if(t0.balls>0&&(t1.balls===0||t0.balls<t1.balls)){bat=t0;bowl=t1;}
+      if (t1.isBattingNow && !t0.isBattingNow) { bat = t1; bowl = t0; }
+      else if (t0.isBattingNow && !t1.isBattingNow) { bat = t0; bowl = t1; }
+      else if (t1.hasBatted && !t0.hasBatted) { bat = t1; bowl = t0; }
+      else if (t0.hasBatted && t1.hasBatted) {
+        if (t1.balls > 0 && (t0.balls === 0 || t1.balls < t0.balls)) { bat = t1; bowl = t0; }
+        else if (t0.balls > 0 && (t1.balls === 0 || t1.balls > t0.balls)) { bat = t0; bowl = t1; }
       }
 
-      let fmtName=(comp?.format?.abbreviation||comp?.type?.abbreviation||ev.name||'T20').toUpperCase();
-      let totOv=20;
-      if(fmtName.includes('ODI')||fmtName.includes('ONE DAY')||fmtName.includes('50')||bat.balls>120||bowl.balls>120)totOv=50;
-      else if(fmtName.includes('T10')||fmtName.includes('10 OVER'))totOv=10;
+      let fmtName = (comp?.format?.abbreviation || comp?.type?.abbreviation || ev.name || 'T20').toUpperCase();
+      let totOv = 20;
+      if (fmtName.includes('ODI') || fmtName.includes('ONE DAY') || fmtName.includes('50') || bat.balls > 120 || bowl.balls > 120) totOv = 50;
+      else if (fmtName.includes('T10') || fmtName.includes('10 OVER')) totOv = 10;
 
-      let oppSc=bowl.hasBatted?`${bowl.runs}/${bowl.wkts}`:'';
-      let statusDetail=(ev.status?.type?.shortDetail||ev.status?.type?.detail||tag).toUpperCase();
+      let oppSc = bowl.hasBatted ? `${bowl.runs}/${bowl.wkts}` : '';
+      let statusDetail = (ev.status?.type?.shortDetail || ev.status?.type?.detail || tag).toUpperCase();
 
-      if(isLive&&bowl.hasBatted&&bowl.runs>0){
-        let target=bowl.runs+1;
-        let need=Math.max(0,target-bat.runs);
-        let remB=Math.max(0,(totOv*6)-bat.balls);
-        if(need>0&&remB>0)statusDetail=`${bat.name} NEED ${need} RUNS IN ${remB} BALLS`;
+      if (isLive && bowl.hasBatted && bowl.runs > 0) {
+        let target = bowl.runs + 1;
+        let need = Math.max(0, target - bat.runs);
+        let remB = Math.max(0, (totOv * 6) - bat.balls);
+        if (need > 0 && remB > 0) statusDetail = `${bat.name} NEED ${need} RUNS IN ${remB} BALLS`;
       }
 
-      let detectedBall=st.lb||'0';
-      let newBallEvent=null;
-      if(st.id==='espn-'+ev.id&&st.bN===bat.name){
-        if(bat.wkts>st.w){detectedBall='W';newBallEvent='W';}
-        else if(bat.runs>st.r){detectedBall=String(bat.runs-st.r);newBallEvent=detectedBall;}
-        else if(bat.balls>st.b&&bat.runs===st.r){detectedBall='0';newBallEvent='0';}
+      let detectedBall = st.lb || '0';
+      let newBallEvent = null;
+      if (st.id === 'espn-' + ev.id && st.bN === bat.name) {
+        if (bat.wkts > st.w) { detectedBall = 'W'; newBallEvent = 'W'; }
+        else if (bat.runs > st.r) { detectedBall = String(bat.runs - st.r); newBallEvent = detectedBall; }
+        else if (bat.balls > st.b && bat.runs === st.r) { detectedBall = '0'; newBallEvent = '0'; }
       }
 
       list.push({
-        id:'espn-'+ev.id,
-        lbl:`${isLive?'🔴 LIVE':'⏰ UPCOMING'} | ${bat.name} vs ${bowl.name}`,
-        isLive:isLive,
-        bN:bat.name,bC:bat.iso,c1:'#b91c1c',r:bat.runs,w:bat.wkts,b:bat.balls,totOv:totOv,
-        lb:detectedBall,newBallEvent:newBallEvent,fN:bowl.name,fC:bowl.iso,c2:'#991b1b',oppSc:oppSc,
-        t:statusDetail
+        id: 'espn-' + ev.id,
+        lbl: `${isLive ? '🔴 LIVE' : '⏰ UPCOMING'} | ${bat.name} (${bat.runs}/${bat.wkts}) vs ${bowl.name}`,
+        isLive: isLive,
+        bN: bat.name, bC: bat.iso, c1: '#b91c1c', r: bat.runs, w: bat.wkts, b: bat.balls, totOv: totOv,
+        lb: detectedBall, newBallEvent: newBallEvent, fN: bowl.name, fC: bowl.iso, c2: '#991b1b', oppSc: oppSc,
+        t: statusDetail
       });
     }
   });
 
-  list.sort((a,b)=>(b.isLive?1:0)-(a.isLive?1:0));
+  list.sort((a, b) => (b.isLive ? 1 : 0) - (a.isLive ? 1 : 0));
 
-  allTeams=[BUILTIN_TEAMS[0],...list,...BUILTIN_TEAMS.slice(1)];
+  allTeams = [BUILTIN_TEAMS[0], ...list, ...BUILTIN_TEAMS.slice(1)];
   buildDropdown();
 
-  if(list.length&&!st.manualLock){
-    let targetMatch=st.id?.startsWith('espn-')?list.find(x=>x.id===st.id):null;
-    if(!targetMatch)targetMatch=list.find(x=>x.isLive)||list[0];
-    if(targetMatch){
-      const changed=(st.r!==targetMatch.r||st.w!==targetMatch.w||st.b!==targetMatch.b||st.bN!==targetMatch.bN||st.t!==targetMatch.t);
-      const prevB=st.b;
-      st={...st,...targetMatch,manualLock:false};
-      if(targetMatch.newBallEvent){
-        if(prevB>0 && Math.floor(targetMatch.b/6)>Math.floor(prevB/6)){
-          st.prevBalls=[...(st.currBalls||[]),targetMatch.newBallEvent];
-          st.currBalls=[];
-        }else{
-          if(!Array.isArray(st.currBalls))st.currBalls=[];
+  if (list.length && !st.manualLock) {
+    let targetMatch = st.id?.startsWith('espn-') ? list.find(x => x.id === st.id) : null;
+    if (!targetMatch) targetMatch = list.find(x => x.isLive) || list[0];
+    if (targetMatch) {
+      const changed = (st.r !== targetMatch.r || st.w !== targetMatch.w || st.b !== targetMatch.b || st.bN !== targetMatch.bN || st.fN !== targetMatch.fN || st.t !== targetMatch.t);
+      const prevB = st.b;
+      st = { ...st, ...targetMatch, manualLock: false };
+      if (targetMatch.newBallEvent) {
+        if (prevB > 0 && Math.floor(targetMatch.b / 6) > Math.floor(prevB / 6)) {
+          st.prevBalls = [...(st.currBalls || []), targetMatch.newBallEvent];
+          st.currBalls = [];
+        } else {
+          if (!Array.isArray(st.currBalls)) st.currBalls = [];
           st.currBalls.push(targetMatch.newBallEvent);
         }
       }
-      document.getElementById('custBat').value=st.bN;
-      document.getElementById('custBowl').value=st.fN;
+      document.getElementById('custBat').value = st.bN;
+      document.getElementById('custBowl').value = st.fN;
       render();
-      if(changed&&isMasterDevice)sync();
+      if (changed) sync();
     }
+  } else if (!list.length) {
+    noteEl.style.color = '#facc15';
+    noteEl.textContent = 'ℹ️ നിലവിൽ Live/Upcoming അന്താരാഷ്ട്ര മത്സരങ്ങൾ ഒന്നും നടക്കുന്നില്ല. താഴെ ലിസ്റ്റിൽ നിന്ന് ടീമിനെ തിരഞ്ഞെടുക്കുക.';
+    return;
   }
-  let now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  let liveCount=list.filter(x=>x.isLive).length;
-  let upCount=list.filter(x=>!x.isLive).length;
-  noteEl.style.color='#34d399';
-  noteEl.textContent=`● ${liveCount} Live & ${upCount} Upcoming Matches Loaded (${now})`;
+
+  let now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  let liveCount = list.filter(x => x.isLive).length;
+  let upCount = list.filter(x => !x.isLive).length;
+  noteEl.style.color = '#34d399';
+  noteEl.textContent = `● Updated: ${liveCount} Live & ${upCount} Upcoming Matches (${now})`;
 }
 
 function getCenterEventDisplay(val){
@@ -1072,6 +981,7 @@ function renderOverBoxes(containerId, arr, padEmpty){
 function updatePrismUrlBox(){
   let base=location.origin+location.pathname;
   let p=new URLSearchParams();
+  p.set('room',ROOM_ID);
   if(st.id&&st.id!=='auto-espn')p.set('mid',st.id);
   if(st.manualLock){
     p.set('bat',st.bN);p.set('bowl',st.fN);
@@ -1134,7 +1044,6 @@ function render(){
   document.getElementById('crrTxt').textContent=st.b>0?((st.r/st.b)*6).toFixed(2):'0.00';
   document.getElementById('remBallsTxt').textContent=`REM: ${remBalls} BALLS`;
 
-  // Render Bottom Over-by-Over Strip
   let completedOvers=Math.floor(st.b/6);
   let prevOvNum=Math.max(1,completedOvers);
   let currOvNum=completedOvers+1;
@@ -1204,7 +1113,7 @@ function setFlag(id,c,n){
 
 function sync(){
   st.ts=Date.now();
-  safeSet('ck_st_v34',JSON.stringify(st));
+  safeSet('ck_st_v37',JSON.stringify(st));
   if(client&&client.connected){
     const {ytKey,ytVid,...safeState}=st;
     client.publish(TOPIC,JSON.stringify({k:'ST',sid:SENDER_ID,d:safeState}),{retain:true});
@@ -1212,7 +1121,6 @@ function sync(){
 }
 
 function addBall(v){
-  isMasterDevice=true;
   unlockSound();
   hist.push(JSON.parse(JSON.stringify(st)));
   st.lb=String(v);
@@ -1235,7 +1143,6 @@ function addBall(v){
 }
 
 function addExtra(v){
-  isMasterDevice=true;
   unlockSound();
   hist.push(JSON.parse(JSON.stringify(st)));
   st.r++;
@@ -1245,23 +1152,15 @@ function addExtra(v){
   render();sync();
 }
 
-function undoBall(){
-  isMasterDevice=true;
-  if(hist.length){st=hist.pop();render();sync();}
-}
+function undoBall(){if(hist.length){st=hist.pop();render();sync();}}
 
 function setBg(b, autoClose=false){
-  isMasterDevice=true;
   st.bg=b;
-  if(autoClose){
-    panelOpen=false;
-    document.getElementById('panel').classList.remove('open');
-  }
+  if(autoClose){panelOpen=false;document.getElementById('panel').classList.remove('open');}
   render();sync();
 }
 
 function swapTeams(){
-  isMasterDevice=true;
   hist.push(JSON.parse(JSON.stringify(st)));
   let prevScore=`${st.r}/${st.w}`;
   [st.bN,st.fN]=[st.fN,st.bN];
@@ -1280,14 +1179,13 @@ function swapTeams(){
 function togglePanel(){
   unlockSound();
   panelOpen=!panelOpen;
-  if(panelOpen)isMasterDevice=true;
   document.getElementById('panel').classList.toggle('open',panelOpen);
   render();
 }
 function hidePanel(){panelOpen=false;document.getElementById('panel').classList.remove('open');render();}
 
 // ============================================================
-// SUBSCRIBE BELL CHIME + SMOOTH NON-CHOPPING AUDIO ENGINE
+// SUBSCRIBE BELL CHIME + SMOOTH AUDIO ENGINE
 // ============================================================
 const DEMOS=[
   {a:'Arjun',m:'What a massive sixer!'},
@@ -1298,9 +1196,7 @@ let dIdx=0,q=[],speaking=false,soundUnlocked=false,audioCtx=null;
 const audioPlayer=document.getElementById('ttsAudioPlayer');
 
 function unlockSound(){
-  if(savedAutoPlay&&!isMusicPlaying&&bgMusic.src){
-    playBgMusic(true);
-  }
+  if(savedAutoPlay&&!isMusicPlaying&&bgMusic.src)playBgMusic(true);
   if(soundUnlocked)return;
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
@@ -1309,9 +1205,7 @@ function unlockSound(){
     if(audioCtx){
       const buf=audioCtx.createBuffer(1,1,22050);
       const src=audioCtx.createBufferSource();
-      src.buffer=buf;
-      src.connect(audioCtx.destination);
-      src.start(0);
+      src.buffer=buf;src.connect(audioCtx.destination);src.start(0);
     }
     if('speechSynthesis' in window)window.speechSynthesis.resume();
     audioPlayer.src='data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
@@ -1328,22 +1222,17 @@ function playBellTone(){
     if(!audioCtx)audioCtx=new AC();
     if(audioCtx.state==='suspended')audioCtx.resume();
     const now=audioCtx.currentTime;
-
     const playNote=(freq,start,dur)=>{
       const osc=audioCtx.createOscillator();
       const gain=audioCtx.createGain();
-      osc.type='sine';
-      osc.frequency.setValueAtTime(freq,start);
+      osc.type='sine';osc.frequency.setValueAtTime(freq,start);
       gain.gain.setValueAtTime(0.001,start);
       gain.gain.exponentialRampToValueAtTime(0.45,start+0.03);
       gain.gain.exponentialRampToValueAtTime(0.001,start+dur);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(start);
-      osc.stop(start+dur);
+      osc.connect(gain);gain.connect(audioCtx.destination);
+      osc.start(start);osc.stop(start+dur);
     };
-    playNote(1046.5,now,0.45);
-    playNote(1318.5,now+0.22,0.65);
+    playNote(1046.5,now,0.45);playNote(1318.5,now+0.22,0.65);
   }catch(e){}
 }
 
@@ -1351,22 +1240,15 @@ function animateAndRingBell(announce=true){
   playBellTone();
   const pill=document.getElementById('subBellPill');
   if(pill){
-    pill.classList.remove('sub-ring');
-    void pill.offsetWidth;
-    pill.classList.add('sub-ring');
+    pill.classList.remove('sub-ring');void pill.offsetWidth;pill.classList.add('sub-ring');
     setTimeout(()=>pill.classList.remove('sub-ring'),700);
   }
-  if(announce){
-    speak('Reminder','Thank you for watching! Please like and subscribe to our channel!');
-  }
+  if(announce)speak('Reminder','Thank you for watching! Please like and subscribe to our channel!');
 }
 
 function triggerSubBell(){
-  unlockSound();
-  animateAndRingBell(true);
-  if(client&&client.connected){
-    client.publish(TOPIC,JSON.stringify({k:'BELL',sid:SENDER_ID}));
-  }
+  unlockSound();animateAndRingBell(true);
+  if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'BELL',sid:SENDER_ID}));
 }
 
 function speak(a,m){
@@ -1388,8 +1270,7 @@ function speak(a,m){
 
 function runQ(){
   if(speaking||!q.length)return;
-  speaking=true;
-  duckMusic(true);
+  speaking=true;duckMusic(true);
 
   let txt=q.shift();
   const statusNote=document.getElementById('soundStatusNote');
@@ -1397,65 +1278,39 @@ function runQ(){
 
   let done=false;
   const finish=()=>{
-    if(done)return;
-    done=true;
-    setTimeout(()=>{
-      speaking=false;
-      if(!q.length)duckMusic(false);
-      runQ();
-    },400);
+    if(done)return;done=true;
+    setTimeout(()=>{speaking=false;if(!q.length)duckMusic(false);runQ();},400);
   };
 
   const directTts=`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(txt.slice(0,160))}&tl=en&client=tw-ob`;
-
-  audioPlayer.pause();
-  audioPlayer.currentTime=0;
-  audioPlayer.src=directTts;
-  audioPlayer.playbackRate=1.0;
-  audioPlayer.volume=1.0;
+  audioPlayer.pause();audioPlayer.currentTime=0;audioPlayer.src=directTts;audioPlayer.playbackRate=1.0;audioPlayer.volume=1.0;
 
   const fallbackSpeech=()=>{
     if('speechSynthesis' in window){
       try{
         window.speechSynthesis.cancel();
-        let u=new SpeechSynthesisUtterance(txt);
-        u.lang='en-IN';
-        u.rate=1.0;
-        u.volume=1.0;
-        u.onend=u.onerror=finish;
-        window.speechSynthesis.speak(u);
-        setTimeout(finish,10000);
-        return;
+        let u=new SpeechSynthesisUtterance(txt);u.lang='en-IN';u.rate=1.0;u.volume=1.0;
+        u.onend=u.onerror=finish;window.speechSynthesis.speak(u);setTimeout(finish,10000);return;
       }catch(e){}
     }
     finish();
   };
 
-  audioPlayer.onended=finish;
-  audioPlayer.onerror=fallbackSpeech;
-  audioPlayer.play().then(()=>{
-    setTimeout(finish,12000);
-  }).catch(()=>{
-    fallbackSpeech();
-  });
+  audioPlayer.onended=finish;audioPlayer.onerror=fallbackSpeech;
+  audioPlayer.play().then(()=>{setTimeout(finish,12000);}).catch(()=>{fallbackSpeech();});
 }
 
 let dTimer=null;
 function toggleAI(on){
-  isMasterDevice=true;
-  unlockSound();
-  st.ai=on;render();sync();clearInterval(dTimer);
+  unlockSound();st.ai=on;render();sync();clearInterval(dTimer);
   if(on){nextDemo();dTimer=setInterval(()=>{if(!ytChat)nextDemo();},12000);}
 }
 function nextDemo(){
-  unlockSound();
-  let x=DEMOS[dIdx++%DEMOS.length];
-  speak(x.a,x.m);
+  unlockSound();let x=DEMOS[dIdx++%DEMOS.length];speak(x.a,x.m);
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:x.a,m:x.m}));
 }
 function testAI(){
-  unlockSound();
-  speak('Gopakumar','Broadcast scoreboard overlay and audio are active!');
+  unlockSound();speak('Gopakumar','Broadcast scoreboard overlay and audio are active!');
   if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a:'Gopakumar',m:'Broadcast scoreboard overlay and audio are active!'}));
 }
 
@@ -1471,37 +1326,25 @@ function extractVideoId(input){
 }
 
 function clearSavedApi(){
-  isMasterDevice=true;
-  clearInterval(ytInt);clearInterval(ytStatsInt);
-  ytChat=null;activeYtKey='';activeYtVid='';
-  st.likeCount='';
-  document.getElementById('apiKeyInp').value='';
-  safeDel('yt_api_key_v34');
-  const note=document.getElementById('ytNote');
-  note.style.color='#facc15';
+  clearInterval(ytInt);clearInterval(ytStatsInt);ytChat=null;activeYtKey='';activeYtVid='';st.likeCount='';
+  document.getElementById('apiKeyInp').value='';safeDel('yt_api_key_v37');
+  const note=document.getElementById('ytNote');note.style.color='#facc15';
   note.textContent='Cleared! Now paste your New Project API Key and tap Connect & Sync';
   render();updatePrismUrlBox();sync();
 }
 
 function saveAndPushApi(){
-  isMasterDevice=true;
   const k=document.getElementById('apiKeyInp').value.trim();
   const v=document.getElementById('vidInp').value.trim();
-  safeSet('yt_api_key_v34',k);
-  safeSet('yt_video_id_v34',v);
-  updatePrismUrlBox();
+  safeSet('yt_api_key_v37',k);safeSet('yt_video_id_v37',v);updatePrismUrlBox();
 }
 
 async function fetchLiveLikeCount(v,k){
-  if(!isMasterDevice)return;
   try{
     let r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${v}&key=${k}`);
     let d=await r.json();
     let likes=d.items?.[0]?.statistics?.likeCount;
-    if(likes!==undefined&&likes!==st.likeCount){
-      st.likeCount=likes;
-      render();sync();
-    }
+    if(likes!==undefined&&likes!==st.likeCount){st.likeCount=likes;render();sync();}
   }catch(e){}
 }
 
@@ -1512,26 +1355,13 @@ async function connectYT(isSilent=false){
   let v=extractVideoId(rawV);
   const note=document.getElementById('ytNote');
 
-  if(!k){
-    if(!isSilent){
-      note.style.color='#f87171';
-      note.textContent='⚠️ ദയവായി പുതിയ Google Cloud Project API Key (AIzaSy...) നൽകുക';
-    }
-    return;
-  }
-  if(!v||v.length!==11){
-    if(!isSilent){
-      note.style.color='#f87171';
-      note.textContent='⚠️ ശരിയായ YouTube Live Video URL അല്ലെങ്കിൽ 11-അക്ഷര ID നൽകുക';
-    }
-    return;
-  }
+  if(!k){if(!isSilent){note.style.color='#f87171';note.textContent='⚠️ ദയവായി പുതിയ Google Cloud Project API Key (AIzaSy...) നൽകുക';}return;}
+  if(!v||v.length!==11){if(!isSilent){note.style.color='#f87171';note.textContent='⚠️ ശരിയായ YouTube Live Video URL അല്ലെങ്കിൽ 11-അക്ഷര ID നൽകുക';}return;}
 
   if(!isSilent)saveAndPushApi();
   if(ytChat&&activeYtKey===k&&activeYtVid===v)return;
 
-  activeYtKey=k;activeYtVid=v;
-  note.style.color='#facc15';
+  activeYtKey=k;activeYtVid=v;note.style.color='#facc15';
   note.textContent='Connecting to YouTube API (Fetching Likes & Live Chat)...';
 
   try{
@@ -1539,26 +1369,17 @@ async function connectYT(isSilent=false){
     let d=await r.json();
 
     if(d.error){
-      const reason=d.error.errors?.[0]?.reason||'';
-      note.style.color='#f87171';
-      if(reason==='quotaExceeded'){
-        note.textContent='❌ ഈ പ്രോജക്റ്റിന്റെ Quota തീർന്നു! Google Cloud-ൽ NEW PROJECT ഉണ്ടാക്കി കീ എടുക്കുക.';
-      }else if(reason==='keyInvalid'||d.error.code===400){
-        note.textContent='❌ API Key തെറ്റാണ്! കീ കോപ്പി ചെയ്തപ്പോൾ സ്പേസ് വന്നിട്ടുണ്ടോ എന്ന് നോക്കുക.';
-      }else if(reason==='accessNotConfigured'||d.error.code===403){
-        note.textContent='❌ Google Cloud-ൽ "YouTube Data API v3" Enable ചെയ്തിട്ടില്ല!';
-      }else{
-        note.textContent='❌ Error: '+(d.error.message||reason);
-      }
-      ytChat=null;activeYtKey='';
-      return;
+      const reason=d.error.errors?.[0]?.reason||'';note.style.color='#f87171';
+      if(reason==='quotaExceeded')note.textContent='❌ ഈ പ്രോജക്റ്റിന്റെ Quota തീർന്നു! Google Cloud-ൽ NEW PROJECT ഉണ്ടാക്കി കീ എടുക്കുക.';
+      else if(reason==='keyInvalid'||d.error.code===400)note.textContent='❌ API Key തെറ്റാണ്! കീ കോപ്പി ചെയ്തപ്പോൾ സ്പേസ് വന്നിട്ടുണ്ടോ എന്ന് നോക്കുക.';
+      else if(reason==='accessNotConfigured'||d.error.code===403)note.textContent='❌ Google Cloud-ൽ "YouTube Data API v3" Enable ചെയ്തിട്ടില്ല!';
+      else note.textContent='❌ Error: '+(d.error.message||reason);
+      ytChat=null;activeYtKey='';return;
     }
 
     if(!d.items||!d.items.length){
-      note.style.color='#f87171';
-      note.textContent='❌ ഈ Video ID കണ്ടെത്താനായില്ല. വീഡിയോ Public/Unlisted ആണോ എന്ന് നോക്കുക.';
-      ytChat=null;activeYtKey='';
-      return;
+      note.style.color='#f87171';note.textContent='❌ ഈ Video ID കണ്ടെത്താനായില്ല. വീഡിയോ Public/Unlisted ആണോ എന്ന് നോക്കുക.';
+      ytChat=null;activeYtKey='';return;
     }
 
     let initLikes=d.items[0]?.statistics?.likeCount;
@@ -1566,40 +1387,28 @@ async function connectYT(isSilent=false){
 
     ytChat=d.items[0]?.liveStreamingDetails?.activeLiveChatId;
     if(!ytChat){
-      note.style.color='#facc15';
-      note.textContent='⚠️ Likes കാണിക്കുന്നുണ്ട്, പക്ഷേ ഈ വീഡിയോയിൽ Live Chat ഓൺ അല്ല.';
-      render();if(!isSilent)sync();
-      return;
+      note.style.color='#facc15';note.textContent='⚠️ Likes കാണിക്കുന്നുണ്ട്, പക്ഷേ ഈ വീഡിയോയിൽ Live Chat ഓൺ അല്ല.';
+      render();if(!isSilent)sync();return;
     }
 
     note.style.color='#34d399';
     note.textContent=`● Connected! Live Likes (${st.likeCount||0}) & New Chat Active`;
     st.ai=true;ytFirstBatchDone=false;seen.clear();ytTok=null;
-    render();
-    if(!isSilent)sync();
+    render();if(!isSilent)sync();
     clearInterval(ytInt);clearInterval(ytStatsInt);
 
     ytStatsInt=setInterval(()=>fetchLiveLikeCount(v,k),15000);
 
     const pollChat=async()=>{
-      if(!ytChat||!st.ai||!isMasterDevice)return;
+      if(!ytChat||!st.ai)return;
       try{
         let u=`https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytChat}&part=snippet,authorDetails&key=${k}`+(ytTok?`&pageToken=${ytTok}`:'');
-        let res=await fetch(u);
-        let dat=await res.json();
-        if(dat.error){
-          note.style.color='#f87171';
-          note.textContent='⚠️ Chat Error: '+(dat.error.message||'Stopped');
-          return;
-        }
+        let res=await fetch(u);let dat=await res.json();
+        if(dat.error){note.style.color='#f87171';note.textContent='⚠️ Chat Error: '+(dat.error.message||'Stopped');return;}
         if(dat.nextPageToken)ytTok=dat.nextPageToken;
         const items=dat.items||[];
 
-        if(!ytFirstBatchDone){
-          items.forEach(i=>seen.add(i.id));
-          ytFirstBatchDone=true;
-          return;
-        }
+        if(!ytFirstBatchDone){items.forEach(i=>seen.add(i.id));ytFirstBatchDone=true;return;}
 
         items.forEach(i=>{
           if(!seen.has(i.id)){
@@ -1608,9 +1417,7 @@ async function connectYT(isSilent=false){
             let tx=i.snippet?.displayMessage||'';
             if(tx){
               speak(a,tx);
-              if(client&&client.connected){
-                client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));
-              }
+              if(client&&client.connected)client.publish(TOPIC,JSON.stringify({k:'SP',sid:SENDER_ID,a,m:tx}));
             }
           }
         });
@@ -1620,19 +1427,18 @@ async function connectYT(isSilent=false){
     await pollChat();
     ytInt=setInterval(pollChat,7000);
   }catch(e){
-    note.style.color='#f87171';
-    note.textContent='❌ Network Error: ഇന്റർനെറ്റ് കണക്ഷൻ പരിശോധിക്കുക.';
+    note.style.color='#f87171';note.textContent='❌ Network Error: ഇന്റർനെറ്റ് കണക്ഷൻ പരിശോധിക്കുക.';
   }
 }
 
 buildDropdown();
-try{let s=JSON.parse(safeGet('ck_st_v34',''));if(s)st={...st,...s};}catch(e){}
+try{let s=JSON.parse(safeGet('ck_st_v37',''));if(s)st={...st,...s};}catch(e){}
 st.manualLock = false;
 
-const initKey=qp.get('key')||safeGet('yt_api_key_v34','');
-const initVid=qp.get('vid')||safeGet('yt_video_id_v34','');
-if(initKey){document.getElementById('apiKeyInp').value=initKey;safeSet('yt_api_key_v34',initKey);}
-if(initVid){document.getElementById('vidInp').value=initVid;safeSet('yt_video_id_v34',initVid);}
+const initKey=qp.get('key')||safeGet('yt_api_key_v37','');
+const initVid=qp.get('vid')||safeGet('yt_video_id_v37','');
+if(initKey){document.getElementById('apiKeyInp').value=initKey;safeSet('yt_api_key_v37',initKey);}
+if(initVid){document.getElementById('vidInp').value=initVid;safeSet('yt_video_id_v37',initVid);}
 
 if(qp.get('mid'))st.id=qp.get('mid');
 if(qp.get('bat')){st.bN=qp.get('bat').toUpperCase();const db=resolveDomesticBadge(st.bN,st.bN);st.bC=resolveCountryFlag(st.bN,st.bN)||(db?db.code:st.bN.slice(0,3));st.manualLock=true;}
@@ -1653,7 +1459,7 @@ if(isControlMode){panelOpen=true;document.getElementById('panel').classList.add(
 
 render();
 fetchESPN(false);
-setInterval(()=>fetchESPN(true),10000);
+setInterval(()=>fetchESPN(true),8000);
 
 if(initKey&&initVid){
   connectYT(true);
@@ -1673,12 +1479,12 @@ if(typeof mqtt!=='undefined'){
         let p=JSON.parse(msg.toString());
         if(p.sid===SENDER_ID)return;
         if(p.k==='ST'&&p.d){
+          // Ignore stale retained messages older than our current state
+          if(p.d.ts && st.ts && p.d.ts < st.ts) return;
           const incomingHash=JSON.stringify({r:p.d.r,w:p.d.w,b:p.d.b,lb:p.d.lb,bN:p.d.bN,fN:p.d.fN,oppSc:p.d.oppSc,t:p.d.t,bg:p.d.bg,showSub:p.d.showSub,likeCount:p.d.likeCount,brand:p.d.brand,prevBalls:p.d.prevBalls,currBalls:p.d.currBalls});
           if(incomingHash===lastStateHash)return;
           lastStateHash=incomingHash;
 
-          lastRemoteSyncTime=Date.now();
-          isMasterDevice=false;
           st={...st,...p.d};
           document.getElementById('custBat').value=st.bN;
           document.getElementById('custBowl').value=st.fN;
